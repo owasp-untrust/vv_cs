@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Owasp.Untrust.VV.Foundation;
+namespace Owasp.Untrust.VV.Core;
 
 public class SelfParsableAdapter<TValue> : IQueryParsable<TValue>
 where TValue : IParsable<TValue>

@@ -1,7 +1,7 @@
 using System.Reflection;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Internal;
 

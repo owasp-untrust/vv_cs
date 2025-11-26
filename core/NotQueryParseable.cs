@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Owasp.Untrust.VV.Foundation;
+namespace Owasp.Untrust.VV.Core;
 
 public class NotQueryParsable<TValue> : IQueryParsable<TValue>
 {

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
-namespace Owasp.Untrust.VV.Build;
+namespace Owasp.Untrust.VV.Archetypes;
 
 class WithDuplicates<TValue> : List<TValue>, IValidatableObject
 {

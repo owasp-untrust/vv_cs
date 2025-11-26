@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Archetypes;
 
-namespace Owasp.Untrust.VV.Build;
+namespace Owasp.Untrust.VV.Core;
 
-public abstract class RegexString<WrapperT> : BoundedString<WrapperT>
-   where WrapperT : RegexString<WrapperT>, ICreatable<WrapperT, string>
+public abstract class RegexStringBase<WrapperT> : BoundedStringBase<WrapperT>
+   where WrapperT : RegexStringBase<WrapperT>, ICreatable<WrapperT, string>
 {
-    public required string Pattern { get; init; }
+    protected abstract string PatternConstraint();
 
     // Regex options for this wrapper type
     public RegexOptions RegexOptions { get; init; } = RegexOptions.None;
@@ -24,14 +24,14 @@ public abstract class RegexString<WrapperT> : BoundedString<WrapperT>
         // If not compiled, just create a fresh Regex (cheap for occasional use)
         if ((options & RegexOptions.Compiled) == 0)
         {
-            return new Regex(Pattern, options, Timeout);
+            return new Regex(PatternConstraint(), options, Timeout);
         }
 
         // Compiled: cache per WrapperT
         var key = typeof(WrapperT);
         return _compiledRegexCache.GetOrAdd(
            key,
-           _ => new Regex(Pattern, options, Timeout)
+           _ => new Regex(PatternConstraint(), options, Timeout)
         );
     }
 

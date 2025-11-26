@@ -1,4 +1,4 @@
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Internal;
 

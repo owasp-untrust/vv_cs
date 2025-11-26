@@ -1,6 +1,6 @@
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
-namespace Owasp.Untrust.VV.Build;
+namespace Owasp.Untrust.VV.Archetypes;
 
 public abstract class SingleWord<WrapperT> : BoundedString<WrapperT>
     where WrapperT : SingleWord<WrapperT>, ICreatable<WrapperT, string>

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV.Internal;
 

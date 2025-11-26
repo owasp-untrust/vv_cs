@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata.Ecma335;
 
-namespace Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
+
+namespace Owasp.Untrust.VV;
 
 public struct Optional<WrapperT> : IQueryParsable<Optional<WrapperT>>
     where WrapperT : class, IQueryParsable<WrapperT> //, __IWrappableForOptional<WrapperT>

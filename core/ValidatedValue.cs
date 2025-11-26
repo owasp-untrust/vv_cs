@@ -2,8 +2,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security;
+using Owasp.Untrust.VV.Archetypes;
 
-namespace Owasp.Untrust.VV.Foundation;
+namespace Owasp.Untrust.VV.Core;
 
 public abstract class ValidatedValue<WrapperT, ValueT, ParserT> 
 : IQueryParsable<WrapperT> //, __IWrappableForOptional<WrapperT>

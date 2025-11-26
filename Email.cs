@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV;
 

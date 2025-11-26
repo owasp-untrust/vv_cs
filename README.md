@@ -1,6 +1,6 @@
 # ValidatedValues (VV)
 
-**ValidatedValues (VV)** is a small C# library for modeling *validated domain values* as explicit types instead of relying on scattered data annotations and ad-hoc checks.
+**Untrust.ValidatedValues (Untrust.VV)** is a small C# library for modeling *validated domain values* as explicit types instead of relying on scattered data annotations and ad-hoc checks.
 
 Instead of:
 
@@ -22,7 +22,7 @@ you use:
 public record PasswordInfo(PasswordLength length, Optional<PasswordChars> chars);
 ```
 
-where `PasswordLength` and `PasswordChars` are *validated* types, and `Optional<T>` encodes optionality at the type level. 
+where `PasswordLength` and `PasswordChars` are *validated* types, and `Optional<T>` encodes optionality at the type level. (see code samples)
 
 ---
 
@@ -95,8 +95,8 @@ ValidatedValues integration is a single line in startup: `AddValidatedValues()`.
 
 ```csharp
 using Microsoft.AspNetCore.Mvc;
-using Sfs.Contracts;
-using Sfs.Services;
+using PwdGen.Contracts;
+using PwdGen.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -141,58 +141,6 @@ That’s all you need: VV plugs into JSON and Swagger automatically.
 
 The library ships with several ready-made validated types you can use immediately.
 
-### Password-related types
-
-**PasswordLength** – bounded integer, 1–10. :contentReference[oaicite:2]{index=2}
-
-```csharp
-using Owasp.Untrust.VV.Foundation;
-using Owasp.Untrust.VV.Build;
-
-namespace Sfs.Contracts;
-
-public class PasswordLength : BoundedNumber<PasswordLength, int>, ICreatable<PasswordLength, int>
-{
-   public static PasswordLength CreateNonValidated(int valueToWrap)
-   {
-      return new PasswordLength { Value = valueToWrap, Bounds = _Bounds(1, 10) };
-   }
-
-   protected override bool ExtraValidation() { return true; }
-}
-```
-
-**PasswordChars** – distinct printable characters, length 10–256. :contentReference[oaicite:3]{index=3}
-
-```csharp
-using Owasp.Untrust.VV.Foundation;
-using Owasp.Untrust.VV.Build;
-
-public class PasswordChars : DistinctPrintableChars<PasswordChars>, ICreatable<PasswordChars, string>
-{
-   public static PasswordChars CreateNonValidated(string valueToWrap)
-   {
-      return new PasswordChars { Value = valueToWrap, Bounds = _Bounds(10, 256) };
-   }
-
-   protected override bool ExtraValidation()
-   {
-      return true;
-   }
-}
-```
-
-**PasswordInfo** – DTO combining length and optional chars. :contentReference[oaicite:4]{index=4}
-
-```csharp
-using Owasp.Untrust.VV;
-using Owasp.Untrust.VV.Foundation;
-
-namespace Sfs.Contracts;
-
-public record PasswordInfo(PasswordLength length, Optional<PasswordChars> chars) {}
-```
-
 ### Email
 
 `Email` wraps a string with bounds and `[EmailAddress]` validation. :contentReference[oaicite:5]{index=5}
@@ -200,7 +148,7 @@ public record PasswordInfo(PasswordLength length, Optional<PasswordChars> chars)
 ```csharp
 using System.ComponentModel.DataAnnotations;
 using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV;
 
@@ -225,7 +173,7 @@ public class Email : BoundedString<Email>, ICreatable<Email, string>
 ```csharp
 using System.ComponentModel.DataAnnotations;
 using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV;
 
@@ -250,7 +198,7 @@ public class Phone : BoundedString<Phone>, ICreatable<Phone, string>
 ```csharp
 using System.ComponentModel.DataAnnotations;
 using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV;
 
@@ -328,7 +276,7 @@ Base class for numeric validated values with min/max range. :contentReference[oa
 ```csharp
 using System.Numerics;
 
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
@@ -357,15 +305,15 @@ Base class for string validated values with length bounds. :contentReference[oai
 
 ```csharp
 using System.Numerics;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
 public abstract class BoundedString<WrapperT> : ValidatedValue<WrapperT, string, SelfParsableAdapter<string>>
    where WrapperT : BoundedString<WrapperT>, ICreatable<WrapperT, string>
 {
-   protected static Bounds<uint> _Bounds(uint minLength, uint maxLength) { return new Bounds<uint>(minLength, maxLength); }
-   public required Bounds<uint> Bounds { get; init; }
+   protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
+   public required Bounds<int> Bounds { get; init; }
 
    protected override ValidationResultHolder ChainableValidation()
    {
@@ -387,7 +335,7 @@ Bounded string + regex, with safe timeout and optional compilation. :contentRefe
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
@@ -439,47 +387,12 @@ public abstract class RegexString<WrapperT> : BoundedString<WrapperT>
 }
 ```
 
-### `DistinctPrintableChars<WrapperT>`
-
-A string where all characters are distinct and printable (no control/surrogate characters). :contentReference[oaicite:12]{index=12}
-
-```csharp
-using Owasp.Untrust.VV.Foundation;
-
-namespace Owasp.Untrust.VV.Build;
-
-public abstract class DistinctPrintableChars<WrapperT> : BoundedString<WrapperT>
-   where WrapperT : DistinctPrintableChars<WrapperT>, ICreatable<WrapperT, string>
-{
-   protected override ValidationResultHolder ChainableValidation()
-   {
-      ValidationResultHolder result = base.ChainableValidation();
-      if (Value.Distinct().Count() != Value.Length)
-      {
-         result.Invalidate();
-      }
-      else
-      {
-         foreach (char c in Value.ToCharArray())
-         {
-            if (char.IsControl(c) || char.IsHighSurrogate(c) || char.IsLowSurrogate(c))
-            {
-               result.Invalidate();
-               break;
-            }
-         }
-      }
-      return result;
-   }
-}
-```
-
 ### `SingleWord<WrapperT>`
 
 A bounded string restricted to ASCII letters (a–z / A–Z). :contentReference[oaicite:13]{index=13}
 
 ```csharp
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
@@ -507,14 +420,14 @@ public abstract class SingleWord<WrapperT> : BoundedString<WrapperT>
 Internal helper that carries bounds along with a `HashSet<TValue>`. :contentReference[oaicite:14]{index=14}
 
 ```csharp
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
 class Distinct<TValue> : HashSet<TValue>
 {
-   protected static Bounds<uint> _Bounds(uint minLength, uint maxLength) { return new Bounds<uint>(minLength, maxLength); }
-   public required Bounds<uint> Bounds { get; init; }
+   protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
+   public required Bounds<int> Bounds { get; init; }
 }
 ```
 
@@ -524,7 +437,7 @@ Example of using `IValidatableObject` + bounds for collection size. :contentRefe
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
@@ -579,6 +492,25 @@ public sealed class Age : BoundedNumber<Age, int>, ICreatable<Age, int>
 }
 ```
 
+**PasswordLength** – bounded integer, 1–10. :contentReference[oaicite:2]{index=2}
+
+```csharp
+using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Build;
+
+namespace PwdGen.Contracts;
+
+public class PasswordLength : BoundedNumber<PasswordLength, int>, ICreatable<PasswordLength, int>
+{
+   public static PasswordLength CreateNonValidated(int valueToWrap)
+   {
+      return new PasswordLength { Value = valueToWrap, Bounds = _Bounds(1, 10) };
+   }
+
+   protected override bool ExtraValidation() { return true; }
+}
+```
+
 ### 2. Using `RegexString`
 
 For structured strings (emails, slugs, IDs), you can:
@@ -587,6 +519,7 @@ For structured strings (emails, slugs, IDs), you can:
 - Provide a `Pattern`, `RegexOptions`, and `Bounds`
 
 You already do something similar with `DistinctPrintableChars<WrapperT>` for password characters.
+
 
 ### 3. Using `ValidatedValue` directly
 
@@ -616,3 +549,57 @@ Then concrete types in that family only need to:
 - Possibly override `ExtraValidation` for additional rules
 
 This layered approach is how `BoundedString`, `RegexString`, `DistinctPrintableChars`, and `SingleWord` are built and reused across multiple domain types.
+
+Here's an example of defining `DistinctPrintableChars` - a building-block class later used to create a `PasswordChars` validated values type:
+
+```csharp contracts/in/buildblocks/DistinctPrintableChars.cs
+using Owasp.Untrust.VV.Build;
+using Owasp.Untrust.VV.Core;
+
+namespace PwdGen.Contracts.In.Build;
+
+public abstract class DistinctPrintableChars<WrapperT> : BoundedString<WrapperT>
+    where WrapperT : DistinctPrintableChars<WrapperT>, ICreatable<WrapperT, string>
+{
+    protected override ValidationResultHolder ChainableValidation()
+    {
+        ValidationResultHolder result = base.ChainableValidation();
+        if (Value.Distinct().Count() != Value.Length)
+        {
+                result.Invalidate();
+        }
+        else
+        {
+            foreach (char c in Value.ToCharArray())
+            {
+                if (char.IsControl(c) || char.IsHighSurrogate(c) || char.IsLowSurrogate(c))
+                {
+                    result.Invalidate();
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+}
+```
+
+After the building block is defined, it can be used to create validated value types, in this case a `PasswordChars` class for 8–64 distinct printable characters :contentReference[oaicite:3]{index=3}
+
+```csharp
+using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Build;
+
+public class PasswordChars : DistinctPrintableChars<PasswordChars>, ICreatable<PasswordChars, string>
+{
+   public static PasswordChars CreateNonValidated(string valueToWrap)
+   {
+      return new PasswordChars { Value = valueToWrap, Bounds = _Bounds(8, 64) };
+   }
+
+   protected override bool ExtraValidation()
+   {
+      return true;
+   }
+}
+```

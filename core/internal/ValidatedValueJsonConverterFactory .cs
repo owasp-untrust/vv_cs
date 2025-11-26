@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 using static Owasp.Untrust.VV.Internal.CommonUtilities;
 
 namespace Owasp.Untrust.VV.Internal;

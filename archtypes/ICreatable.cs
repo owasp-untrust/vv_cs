@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace Owasp.Untrust.VV.Foundation;
+namespace Owasp.Untrust.VV.Archetypes;
 
 public interface ICreatable<WrapperT, ValueT>
 {

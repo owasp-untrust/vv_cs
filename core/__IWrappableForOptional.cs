@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Security;
 
-namespace Owasp.Untrust.VV.Foundation;
+namespace Owasp.Untrust.VV.Core;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [Obsolete("Do not use!", true)]

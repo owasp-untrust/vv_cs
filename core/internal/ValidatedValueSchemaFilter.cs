@@ -2,7 +2,7 @@ using System;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-using Owasp.Untrust.VV.Foundation;
+using Owasp.Untrust.VV.Core;
 using static Owasp.Untrust.VV.Internal.CommonUtilities;
 
 namespace Owasp.Untrust.VV.Internal;

@@ -1,6 +1,8 @@
 using System.Numerics;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
+namespace Owasp.Untrust.VV.Archetypes;
+
 public struct Bounds<ValueT>
     where ValueT : INumber<ValueT>
 {

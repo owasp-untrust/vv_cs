@@ -4,14 +4,9 @@ using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV.Core;
 
-public abstract class HexStringBase<WrapperT> : RegexStringBase<WrapperT>
-where WrapperT : HexStringBase<WrapperT>, ICreatable<WrapperT, string>
+public abstract class HexStringBase<TWrapper> : RegexStringBase<TWrapper>
+where TWrapper : HexStringBase<TWrapper>, ICreatable<TWrapper, string>
 {
-    /// <summary>
-    /// Canonical hex pattern (no 0x prefix, upper/lower mixed allowed).
-    /// </summary>
-    protected override string PatternConstraint() { return "^[0-9A-Fa-f]+$"; }
-
     protected HexStringBase() {
         RegexOptions = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
     }
@@ -62,4 +57,10 @@ where WrapperT : HexStringBase<WrapperT>, ICreatable<WrapperT, string>
 
         return bytes;
     }
+
+    /// <summary>
+    /// Canonical hex pattern (no 0x prefix, upper/lower mixed allowed).
+    /// </summary>
+    protected sealed override string PatternConstraint() { return "^[0-9A-Fa-f]+$"; }
+    protected sealed override Type? SharedRegexKey() { return typeof(HexString<>); }
 }

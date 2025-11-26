@@ -6,9 +6,9 @@ using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV.Core;
 
-public abstract class ValidatedValue<WrapperT, ValueT, ParserT> 
-: IQueryParsable<WrapperT> //, __IWrappableForOptional<WrapperT>
-    where WrapperT : ValidatedValue<WrapperT, ValueT, ParserT>, ICreatable<WrapperT, ValueT>
+public abstract class ValidatedValue<TWrapper, ValueT, ParserT> 
+: IQueryParsable<TWrapper> //, __IWrappableForOptional<TWrapper>
+    where TWrapper : ValidatedValue<TWrapper, ValueT, ParserT>, ICreatable<TWrapper, ValueT>
     where ParserT : IQueryParsable<ValueT>
     where ValueT : notnull
 {
@@ -17,7 +17,7 @@ public abstract class ValidatedValue<WrapperT, ValueT, ParserT>
     public static bool TryParse(
         string? asStr,
         IFormatProvider? provider,
-        [MaybeNullWhen(false)] out WrapperT result)
+        [MaybeNullWhen(false)] out TWrapper result)
     {
         if (asStr != null) {
             ValueT value;
@@ -33,9 +33,9 @@ public abstract class ValidatedValue<WrapperT, ValueT, ParserT>
         return false;
     }
 
-    public static bool TryWrap(ValueT value, out WrapperT result)
+    public static bool TryWrap(ValueT value, out TWrapper result)
     {
-        result = WrapperT.CreateNonValidated(value);
+        result = TWrapper.CreateNonValidated(value);
         if (result.ChainableValidation().IsValid)
         {
             if (result.ExtraValidation())
@@ -47,9 +47,9 @@ public abstract class ValidatedValue<WrapperT, ValueT, ParserT>
         return false;
     }
 
-    public static WrapperT Wrap(ValueT value)
+    public static TWrapper Wrap(ValueT value)
     {
-        WrapperT result;
+        TWrapper result;
         if (!TryWrap(value, out result))
         {
             throw new FormatException("Invalid input");
@@ -79,7 +79,7 @@ public abstract class ValidatedValue<WrapperT, ValueT, ParserT>
     protected virtual ValidationResultHolder ChainableValidation() { return new ValidationResultHolder(true); }
 
     /*[EditorBrowsable(EditorBrowsableState.Never)]
-    static bool __IWrappableForOptional<WrapperT>.__TryWrapBypassingCompileTimeValueTypeCheck(object valueAsObj, out WrapperT result)
+    static bool __IWrappableForOptional<TWrapper>.__TryWrapBypassingCompileTimeValueTypeCheck(object valueAsObj, out TWrapper result)
     {
         Debug.Assert(valueAsObj is ValueT);
         return TryWrap((ValueT)valueAsObj, out result);

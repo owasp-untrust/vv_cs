@@ -21,7 +21,7 @@ public sealed class ValidatedValueSchemaFilter : ISchemaFilter
          isRequired = false;
       }
 
-      // <WrapperT, ValueT, ParserT>
+      // <TWrapper, ValueT, ParserT>
       var args = validatedBase.GetGenericArguments();
       var valueType = args[1];
 

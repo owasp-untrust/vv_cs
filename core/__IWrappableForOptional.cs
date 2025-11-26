@@ -6,9 +6,9 @@ namespace Owasp.Untrust.VV.Core;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [Obsolete("Do not use!", true)]
-public interface __IWrappableForOptional<WrapperT>
-    where WrapperT : __IWrappableForOptional<WrapperT>
+public interface __IWrappableForOptional<TWrapper>
+    where TWrapper : __IWrappableForOptional<TWrapper>
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
-    static abstract bool __TryWrapBypassingCompileTimeValueTypeCheck(object valueAsObj, out WrapperT result);
+    static abstract bool __TryWrapBypassingCompileTimeValueTypeCheck(object valueAsObj, out TWrapper result);
 }

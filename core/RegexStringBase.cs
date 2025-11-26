@@ -5,8 +5,8 @@ using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV.Core;
 
-public abstract class RegexStringBase<WrapperT> : BoundedStringBase<WrapperT>
-   where WrapperT : RegexStringBase<WrapperT>, ICreatable<WrapperT, string>
+public abstract class RegexStringBase<TWrapper> : BoundedAnyContentStringBase<TWrapper>
+   where TWrapper : RegexStringBase<TWrapper>, ICreatable<TWrapper, string>
 {
     protected abstract string PatternConstraint();
 
@@ -20,15 +20,16 @@ public abstract class RegexStringBase<WrapperT> : BoundedStringBase<WrapperT>
     private Regex GetRegex()
     {
         var options = RegexOptions;
+        var sharingKey = SharedRegexKey();
 
         // If not compiled, just create a fresh Regex (cheap for occasional use)
-        if ((options & RegexOptions.Compiled) == 0)
+        if ((sharingKey == null) && ((options & RegexOptions.Compiled) == 0))
         {
             return new Regex(PatternConstraint(), options, Timeout);
         }
 
-        // Compiled: cache per WrapperT
-        var key = typeof(WrapperT);
+        // Compiled: cache per TWrapper
+        var key = sharingKey ?? typeof(TWrapper);
         return _compiledRegexCache.GetOrAdd(
            key,
            _ => new Regex(PatternConstraint(), options, Timeout)
@@ -50,4 +51,7 @@ public abstract class RegexStringBase<WrapperT> : BoundedStringBase<WrapperT>
 
         return result;
     }
+
+    protected virtual RegexOptions ArchetypeOptions() { return RegexOptions.None; }
+    protected virtual Type? SharedRegexKey() { return null; }
 }

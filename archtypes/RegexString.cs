@@ -5,8 +5,8 @@ using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Archetypes;
 
-public abstract class RegexString<WrapperT> : RegexStringBase<WrapperT>
-   where WrapperT : RegexString<WrapperT>, ICreatable<WrapperT, string>
+public abstract class RegexString<TWrapper> : RegexStringBase<TWrapper>
+   where TWrapper : RegexString<TWrapper>, ICreatable<TWrapper, string>
 {
     protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
     public required Bounds<int> Bounds { get; init; }
@@ -17,7 +17,7 @@ public abstract class RegexString<WrapperT> : RegexStringBase<WrapperT>
         return Bounds;
     }
 
-    protected override sealed string PatternConstraint() 
+    protected sealed override string PatternConstraint() 
     {
         return Pattern;
     }

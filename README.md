@@ -269,7 +269,7 @@ public class PasswordController : ControllerBase
 
 ## Core building blocks (with source examples)
 
-### `BoundedNumber<WrapperT, ValueT>`
+### `BoundedNumber<TWrapper, ValueT>`
 
 Base class for numeric validated values with min/max range. :contentReference[oaicite:9]{index=9}
 
@@ -280,8 +280,8 @@ using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
-public abstract class BoundedNumber<WrapperT, ValueT> : ValidatedValue<WrapperT, ValueT, SelfParsableAdapter<ValueT>>
-   where WrapperT : BoundedNumber<WrapperT, ValueT>, ICreatable<WrapperT, ValueT>
+public abstract class BoundedNumber<TWrapper, ValueT> : ValidatedValue<TWrapper, ValueT, SelfParsableAdapter<ValueT>>
+   where TWrapper : BoundedNumber<TWrapper, ValueT>, ICreatable<TWrapper, ValueT>
    where ValueT : INumber<ValueT>
 {
    protected static Bounds<ValueT> _Bounds(ValueT min, ValueT max) { return new Bounds<ValueT>(min, max); }
@@ -299,7 +299,7 @@ public abstract class BoundedNumber<WrapperT, ValueT> : ValidatedValue<WrapperT,
 }
 ```
 
-### `BoundedString<WrapperT>`
+### `BoundedString<TWrapper>`
 
 Base class for string validated values with length bounds. :contentReference[oaicite:10]{index=10}
 
@@ -309,8 +309,8 @@ using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
-public abstract class BoundedString<WrapperT> : ValidatedValue<WrapperT, string, SelfParsableAdapter<string>>
-   where WrapperT : BoundedString<WrapperT>, ICreatable<WrapperT, string>
+public abstract class BoundedString<TWrapper> : ValidatedValue<TWrapper, string, SelfParsableAdapter<string>>
+   where TWrapper : BoundedString<TWrapper>, ICreatable<TWrapper, string>
 {
    protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
    public required Bounds<int> Bounds { get; init; }
@@ -327,7 +327,7 @@ public abstract class BoundedString<WrapperT> : ValidatedValue<WrapperT, string,
 }
 ```
 
-### `RegexString<WrapperT>`
+### `RegexString<TWrapper>`
 
 Bounded string + regex, with safe timeout and optional compilation. :contentReference[oaicite:11]{index=11}
 
@@ -339,8 +339,8 @@ using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
-public abstract class RegexString<WrapperT> : BoundedString<WrapperT>
-   where WrapperT : RegexString<WrapperT>, ICreatable<WrapperT, string>
+public abstract class RegexString<TWrapper> : BoundedString<TWrapper>
+   where TWrapper : RegexString<TWrapper>, ICreatable<TWrapper, string>
 {
    public required string Pattern { get; init; }
 
@@ -361,8 +361,8 @@ public abstract class RegexString<WrapperT> : BoundedString<WrapperT>
          return new Regex(Pattern, options, Timeout);
       }
 
-      // Compiled: cache per WrapperT
-      var key = typeof(WrapperT);
+      // Compiled: cache per TWrapper
+      var key = typeof(TWrapper);
       return _compiledRegexCache.GetOrAdd(
          key,
          _ => new Regex(Pattern, options, Timeout)
@@ -387,7 +387,7 @@ public abstract class RegexString<WrapperT> : BoundedString<WrapperT>
 }
 ```
 
-### `SingleWord<WrapperT>`
+### `SingleWord<TWrapper>`
 
 A bounded string restricted to ASCII letters (a–z / A–Z). :contentReference[oaicite:13]{index=13}
 
@@ -396,8 +396,8 @@ using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Build;
 
-public abstract class SingleWord<WrapperT> : BoundedString<WrapperT>
-   where WrapperT : SingleWord<WrapperT>, ICreatable<WrapperT, string>
+public abstract class SingleWord<TWrapper> : BoundedString<TWrapper>
+   where TWrapper : SingleWord<TWrapper>, ICreatable<TWrapper, string>
 {
    protected override ValidationResultHolder ChainableValidation()
    {
@@ -515,17 +515,17 @@ public class PasswordLength : BoundedNumber<PasswordLength, int>, ICreatable<Pas
 
 For structured strings (emails, slugs, IDs), you can:
 
-- Inherit from `RegexString<WrapperT>`
+- Inherit from `RegexString<TWrapper>`
 - Provide a `Pattern`, `RegexOptions`, and `Bounds`
 
-You already do something similar with `DistinctPrintableChars<WrapperT>` for password characters.
+You already do something similar with `DistinctPrintableChars<TWrapper>` for password characters.
 
 
 ### 3. Using `ValidatedValue` directly
 
 For more complex cases:
 
-- Inherit from `ValidatedValue<WrapperT, ValueT, ParserT>`
+- Inherit from `ValidatedValue<TWrapper, ValueT, ParserT>`
 - Implement:
   - `ExtraValidation` for domain-specific checks
   - Any additional properties/methods you need
@@ -537,7 +537,7 @@ For more complex cases:
 
 If you see a recurring pattern across multiple VV types:
 
-- Create an abstract base (e.g. `NonEmptyLowercaseString<WrapperT> : RegexString<WrapperT>`)
+- Create an abstract base (e.g. `NonEmptyLowercaseString<TWrapper> : RegexString<TWrapper>`)
 - Encapsulate:
   - A specific regex
   - Bounds
@@ -558,8 +558,8 @@ using Owasp.Untrust.VV.Core;
 
 namespace PwdGen.Contracts.In.Build;
 
-public abstract class DistinctPrintableChars<WrapperT> : BoundedString<WrapperT>
-    where WrapperT : DistinctPrintableChars<WrapperT>, ICreatable<WrapperT, string>
+public abstract class DistinctPrintableChars<TWrapper> : BoundedString<TWrapper>
+    where TWrapper : DistinctPrintableChars<TWrapper>, ICreatable<TWrapper, string>
 {
     protected override ValidationResultHolder ChainableValidation()
     {

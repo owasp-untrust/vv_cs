@@ -3,8 +3,8 @@ using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV.Core;
 
-public abstract class BoundedNumberBase<WrapperT, ValueT> : ValidatedValue<WrapperT, ValueT, SelfParsableAdapter<ValueT>>
-    where WrapperT : BoundedNumberBase<WrapperT, ValueT>, ICreatable<WrapperT, ValueT>
+public abstract class BoundedNumberBase<TWrapper, ValueT> : ValidatedValue<TWrapper, ValueT, SelfParsableAdapter<ValueT>>
+    where TWrapper : BoundedNumberBase<TWrapper, ValueT>, ICreatable<TWrapper, ValueT>
     where ValueT : INumber<ValueT>
 {
     protected abstract Bounds<ValueT> BoundsConstraint();

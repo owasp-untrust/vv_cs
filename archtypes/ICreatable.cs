@@ -1,6 +1,6 @@
 namespace Owasp.Untrust.VV.Archetypes;
 
-public interface ICreatable<WrapperT, ValueT>
+public interface ICreatable<TWrapper, ValueT>
 {
-    static abstract WrapperT CreateNonValidated(ValueT valueToWrap); 
+    static abstract TWrapper CreateNonValidated(ValueT valueToWrap); 
 }

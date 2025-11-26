@@ -13,7 +13,7 @@ public sealed class ValidatedValueJsonConverterFactory : JsonConverterFactory
          return true;
       }
 
-      // Optional<WrapperT> where WrapperT is a ValidatedValue<,,>
+      // Optional<TWrapper> where TWrapper is a ValidatedValue<,,>
       return TryExtractOptionalInternalType(typeToConvert) is not null;
       /*if (IsOptional(typeToConvert))
       {
@@ -48,7 +48,7 @@ public sealed class ValidatedValueJsonConverterFactory : JsonConverterFactory
                                 .MakeGenericType(wrapperType);
 
          return (JsonConverter)Activator.CreateInstance(optionalConvType, innerTypeConverter)!;
-         //return new OptionalJsonConverter<WrapperT>(innerTypeConverter);
+         //return new OptionalJsonConverter<TWrapper>(innerTypeConverter);
       }
       else
       {

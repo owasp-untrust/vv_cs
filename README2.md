@@ -197,6 +197,63 @@ See implementation at:
 
 - `Owasp.Untrust.VV/CreditCard.cs`
 
+### DeviceId
+
+`DeviceId` is a generic IoT device identifier: letters, digits, dash, underscore, colon, and slash.  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/DeviceId.cs`
+
+### Hex
+
+`Hex` is a general-purpose hex value (1–512 hex digits, no `0x` prefix).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Hex.cs`
+
+### IP with `IpAddressPolicy`
+
+`IP<TIpPolicy>` wraps `IPAddress` and enforces whether addresses are internal/external and/or IPv4/IPv6 based on a chosen `IpAddressPolicy` (for example `AnyIp`, `InternalIp`, `ExternalIp`, `InternalIpV4`, `ExternalIpV4`).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/IP.cs`
+- `Owasp.Untrust.VV/IpAddressPolicy.cs`
+
+### MacAddress
+
+`MacAddress` represents a MAC address in standard textual form (for example `AA:BB:CC:DD:EE:FF`).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/MacAddress.cs`
+
+### SSN
+
+`SSN` represents a US Social Security Number (`AAA-GG-SSSS`), including checks that disallow `000/666/9xx` prefixes, `00` group, and `0000` serial.  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/SSN.cs`
+
+### Username
+
+`Username` represents a username that cannot start with a digit and then allows letters, digits, and underscore.  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Username.cs`
+
+### WiFiNetwork
+
+`WiFiNetwork` represents a Wi-Fi SSID (1–32 printable ASCII characters, no control characters).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/WiFiNetwork.cs`
+
 You can use these directly in your request or response models and services:
 
 ```csharp
@@ -222,14 +279,14 @@ See implementation at:
 
 - `Owasp.Untrust.VV/Archetypes/Bounds.cs`
 
-### `ICreatable<TWrapper, ValueT>`
+### `ICreatable<TWrapper, TValue>`
 
 Interface implemented by all wrapper types so archetypes and Core can construct them internally:
 
 ```csharp
-public interface ICreatable<TWrapper, ValueT>
+public interface ICreatable<TWrapper, TValue>
 {
-   static abstract TWrapper CreateNonValidated(ValueT valueToWrap);
+   static abstract TWrapper CreateNonValidated(TValue valueToWrap);
 }
 ```
 
@@ -237,49 +294,60 @@ See implementation at:
 
 - `Owasp.Untrust.VV/Archetypes/ICreatable.cs`
 
-### `BoundedNumber<TWrapper, ValueT>`
+### `BoundedNumber<TWrapper, TValue>`
 
 Archetype for numeric ranges.
 
 - Use when you want a validated number such as `Age`, `RetryCount`, or `PasswordLength` with a min and max range.
 - Constraints:
-  - `ValueT` implements `INumber<ValueT>`
-  - `TWrapper` implements `ICreatable<TWrapper, ValueT>` and derives from `BoundedNumber<TWrapper, ValueT>`
+  - `TValue` implements `INumber<TValue>`
+  - `TWrapper` implements `ICreatable<TWrapper, TValue>` and derives from `BoundedNumber<TWrapper, TValue>`
 - Configuration:
-  - `Bounds<ValueT> Bounds` (init only) defines the allowed range.
+  - `Bounds<TValue> Bounds` (init only) defines the allowed range.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds` in an object initializer, for example:  
+    `new Age { Value = valueToWrap, Bounds = s_bounds }`.
 
 See implementation at:
 
 - `Owasp.Untrust.VV/Archetypes/BoundedNumber.cs`
 
-### `BoundedPrintableString<TWrapper>`
+### `SingleLine<TWrapper, TTabPolicy>`
+### `Multiline<TWrapper, TTabPolicy>`
 
-Archetype for strings with length constraints.
-
-- A length-constrained string that can contain anything - only min and max length are validated.
-- WARNING: Be careful! The string's content is NOT checked/validated.
-- Configuration:
-  - `Bounds<int> Bounds` (init only) defines min and max length in characters.
-
-See implementation at:
-
-- `Owasp.Untrust.VV/Archetypes/BoundedString.cs`
-
-### `SingleLine<TWrapper>`
-### `Multiline<TWrapper>`
-
-Archetype for strings with length constraints.
+Archetype for strings with length constraints and a tab policy.
 
 - Use when you only care about min and max length, not content pattern.
-- Use when you allow any printable character (no control characters, except for tab and maybe newline)
+- Use when you allow any printable character (no control characters, except for tab [depending on TabPolicy] and maybe newline)
 - Newline is allowed only in the *Multiline* version
+- Tabs are allowed or rejected based on `TTabPolicy`, which implements `TabPolicy`.
 - Configuration:
   - `Bounds<int> Bounds` (init only) defines min and max length in characters.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds`, for example:  
+    `new MySingleLine { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
 
 See implementation at:
 
 - `Owasp.Untrust.VV/Archetypes/SingleLine.cs`
 - `Owasp.Untrust.VV/Archetypes/Multiline.cs`
+
+### `TabPolicy`, `AcceptTab`, and `RejectTab`
+
+`TabPolicy` is a simple policy interface that controls whether the archetypes accept the tab character.
+
+- `TabPolicy` exposes a static `AllowTab()` method.
+- `AcceptTab` returns `true` and allows `\t`.
+- `RejectTab` returns `false` and rejects `\t`.
+
+You use these as the `TTabPolicy` type parameter for `SingleLine<,>` and `Multiline<,>`:
+
+- `SingleLine<MyWrapper, AcceptTab>` → tabs allowed.
+- `SingleLine<MyWrapper, RejectTab>` → tabs rejected.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/TabPolicy.cs`
 
 ### `RegexString<TWrapper>`
 
@@ -291,7 +359,10 @@ Archetype for strings validated by both length and regex.
   - `string Pattern` (init only)
   - *\[optional\]* `RegexOptions RegexOptions` (init only, defaults to `RegexOptions.None`)
   - *\[optional\]* `TimeSpan Timeout` (init only, defaults to 100ms)  
-- Regex compilation, caching, options, and timeout are handled in the Core base class.
+- Concrete type init:
+  - In `CreateNonValidated`, you set `Value`, `Bounds`, `Pattern`, and optionally `RegexOptions` and `Timeout` in the initializer.
+
+Regex compilation, caching, options, and timeout are handled in the Core base class.
 
 See implementation at:
 
@@ -304,24 +375,87 @@ Archetype for hex encoded values.
 - Use when the underlying value is a hex string (IDs, tokens, hashes, etc.).
 - Configuration:
   - `Bounds<int> Bounds` (init only) for min and max hex length.
-- Behavior:
-  - Hex validation is built in at the Core level (canonical hex pattern).
-  - Conversion helpers (for example to `int`, `long`, `byte[]`) are provided by the base class.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds`, for example:  
+    `new MyHex { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+
+Behavior:
+
+- Hex validation is built in at the Core level (canonical hex pattern).
+- Conversion helpers (for example to `int`, `long`, `byte[]`) are provided by the base class.
 
 See implementation at:
 
 - `Owasp.Untrust.VV/Archetypes/HexString.cs`
 
+### `Base64<TWrapper, TVariant>`
+
+Archetype for base64-encoded values, with behavior controlled by a variant policy type.
+
+- Use when the underlying value is a base64 string (binary IDs, tokens, keys, etc.).
+- Configuration:
+  - `Bounds<int> Bounds` (init only) for min and max base64 length.
+  - `TVariant` is a policy type implementing `Base64Variant` and controlling which base64 alphabet is allowed.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds`, for example:  
+    `new MyBase64 { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+
+Behavior:
+
+- Delegates base64-specific parsing and validation to `Base64Base<TWrapper, TVariant>` in Core.
+- Uses the regex provided by `TVariant.Regex()` to validate allowed characters and padding.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/Base64.cs`
+
+### `Base64Variant`, `Standard`, and `UrlSafe`
+
+`Base64Variant` is a policy interface used to define which base64 alphabet and padding rules are valid.
+
+- `Base64Variant` exposes a static `Regex()` method that returns the compiled regex for the allowed alphabet.
+- `Standard` implements the standard Base64 alphabet (`A–Z`, `a–z`, `0–9`, `+`, `/`) with `=` padding.
+- `UrlSafe` implements the URL-safe Base64 alphabet (`A–Z`, `a–z`, `0–9`, `_`, `-`) with `=` padding.
+
+You use these as the `TVariant` type parameter for `Base64<,>`:
+
+- `Base64<MyWrapper, Standard>` → standard Base64.
+- `Base64<MyWrapper, UrlSafe>` → URL-safe Base64.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/Base64Variant.cs`
+
 ### `SingleWord<TWrapper>`
 
 Archetype for single ASCII words (letters only).
 
-- Built on top of `RegexString<TWrapper>`.
+- Built on top of `RegexStringBase<TWrapper>`.
 - Ensures all characters are ASCII letters (a single word, no spaces or punctuation).
+- Configuration:
+  - `Bounds<int> Bounds` (init only) defines min and max length in characters.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set `Value` and `Bounds`, for example:  
+    `new MyWord { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+- The regex pattern (`^[A-Za-z]+$`) and a shared regex cache key are provided by the archetype and do not need to be configured in the concrete type.
 
 See implementation at:
 
 - `Owasp.Untrust.VV/Archetypes/SingleWord.cs`
+
+### Policy types as generic parameters
+
+Several archetypes use *policy types* as generic parameters to control behavior at the type level:
+
+- `SingleLine<TWrapper, TTabPolicy>` / `Multiline<TWrapper, TTabPolicy>` use `TTabPolicy : TabPolicy` to decide whether tab characters are allowed.
+- `Base64<TWrapper, TVariant>` uses `TVariant : Base64Variant` to choose the base64 alphabet and padding rules.
+
+This allows you to:
+
+- Select behavior by choosing a type (for example `AcceptTab` vs `RejectTab`, `Standard` vs `UrlSafe`).
+- Introduce your own policies by implementing the corresponding interface (for example a custom `Base64Variant` with a different alphabet or a custom `TabPolicy` that restricts tabs in specific contexts).
+
+Once you choose the policy type in the generic parameters, it is enforced consistently everywhere that validated value type is used.
 
 ---
 
@@ -559,10 +693,12 @@ The `DistinctPrintableChars<TWrapper>` and `PasswordChars` example above follows
 
 If the existing archetypes are not enough, you can build your own archetype on top of the Core base classes in `Owasp.Untrust.VV.Core`:
 
-- `BoundedNumberBase<TWrapper, ValueT>`
+- `Base64Base<TWrapper, TVariant>` where TVariant is a `Base64Variant`
+- `BoundedNumberBase<TWrapper, TValue>`
 - `BoundedAnyContentStringBase<TWrapper>`
-- `RegexStringBase<TWrapper>`
 - `HexStringBase<TWrapper>`
+- `RegexStringBase<TWrapper>`
+- `ValidatedValue<TWrapper, TValue, TParser>` (top-level base class) where TValue is the underlying value type and TParser is a class that implements `IQueryParsable<TValue>`
 
 - WARNING: Be careful with the BoundedAnyContentStringBase! The string's content is NOT checked/validated and it COULD contain control characters.
 

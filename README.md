@@ -5,7 +5,7 @@
 Instead of:
 
 ```csharp
-public class PasswordInfoDto
+public class PasswordGenerationConfigDTO
 {
    [Range(1, 10)]
    public int Length { get; set; }
@@ -19,10 +19,12 @@ public class PasswordInfoDto
 you use:
 
 ```csharp
-public record PasswordInfo(PasswordLength length, Optional<PasswordChars> chars);
+public sealed record PasswordGenerationConfigDTO(
+   PasswordLength Length,
+   Optional<PasswordChars> Chars);
 ```
 
-where `PasswordLength` and `PasswordChars` are *validated* types, and `Optional<T>` encodes optionality at the type level. (see code samples)
+where `PasswordLength` and `PasswordChars` are *validated* types, and `Optional<T>` encodes optionality at the type level. (See the code samples below.)
 
 ---
 
@@ -30,43 +32,45 @@ where `PasswordLength` and `PasswordChars` are *validated* types, and `Optional<
 
 ### Reusable validation
 
-Validation logic lives in *types*, not individual properties:
+Validation logic lives in types, not individual properties:
 
 - A single `PasswordLength` type encapsulates “1–10 characters” once.
 - A single `PasswordChars` type encapsulates “distinct printable characters, length 10–256” once.
-- A single `Email` / `Phone` / `CreditCard` type encapsulates their respective format rules once.
+- A single `Email` or `Phone` or `CreditCard` type encapsulates its format rules once.
 - Any DTO or entity using these types automatically gets the same validation.
 
 ### Stronger assurances via the type system
 
-- Using `PasswordLength` instead of `int` means “this value has already been validated”.
+- Using `PasswordLength` instead of `int` means “this value has already been validated as a legal length”.
 - Using `Email` instead of `string` means “this is a valid email”.
-- You can’t accidentally pass an unvalidated primitive where a validated value is required.
+- You cannot accidentally pass an unvalidated primitive where a validated value is required.
 - Optionality is explicit through `Optional<T>` rather than “null sometimes means missing”.
 
 ### Flexible logic (not limited to attributes)
 
 - Validation is regular C# code, not restricted to attribute shapes.
 - You can combine:
-  - Bounds (length / range) via `Bounds<T>`
+  - Bounds (length or numeric range) via `Bounds<T>`
   - Regex checks
   - Content rules (distinctness, character classes, etc.)
   - Domain-specific logic inside `ExtraValidation`.
+  - Definition of reusable archetype classes that contain a hook into a validation chain common to all types extending the archetype (via `ChainableValidation`)
 
 ### Enforced bounds
 
-The bounded base types require a `Bounds` object:
+The bounded archetypes require a `Bounds` object:
 
-- You must specify min/max bounds for strings and numbers when using the bounded base classes.
-- This makes it harder to accidentally forget limits on untrusted input.
+- You must specify min and max bounds for strings and numbers when using the bounded archetypes.
+  This makes it harder to forget limits on untrusted input.
 
 ### Secure defaults
 
-- **Required by default**: VV types are treated as required unless wrapped in `Optional<T>`.
-- **Null only when explicit**: `null` is possible only when:
+- Required by default: VV types are treated as required unless wrapped in `Optional<T>`.
+- Null only when explicit: `null` is possible only when:
   - you use `Optional<T>`, or
   - you use nullable reference types explicitly (`T?`).
-- This aligns with secure coding practices for untrusted input.
+
+This aligns with secure by default coding practices for untrusted input.
 
 ### Framework integration
 
@@ -74,6 +78,28 @@ The library is designed to plug into common .NET infrastructure:
 
 - JSON: a `JsonConverterFactory` makes VV types serialize as their primitive counterparts.
 - Swagger / OpenAPI: schema filters map VV types to appropriate primitive schemas, including correct `nullable` for `Optional<T>`.
+
+You configure this once, and then use your validated value types directly in controllers, minimal APIs, and DTOs.
+
+---
+
+## Namespaces
+
+- `Owasp.Untrust.VV.Archetypes`  
+  Public surface for defining validated values:
+  - Archetypes such as `BoundedNumber<,>`, `BoundedPrintableString<>`, `RegexString<>`, `HexString<>`, `SingleWord<>`
+  - Shared helpers such as `Bounds<T>`, `ICreatable<,>`, and `Optional<T>`
+
+- `Owasp.Untrust.VV.Core`  
+  Low level infrastructure and hierarchical base classes used to implement archetypes:
+  - `BoundedNumberBase<,>`, `BoundedAnyContentStringBase<>`, `RegexStringBase<>`, `HexStringBase<>`, etc.
+  - Validation pipeline internals and extension points
+
+When you implement your own validated value (such as `Age`, `Username`, or `DeviceId`), you normally only need:
+
+```csharp
+using Owasp.Untrust.VV.Archetypes;
+```
 
 ---
 
@@ -95,7 +121,7 @@ ValidatedValues integration is a single line in startup: `AddValidatedValues()`.
 
 ```csharp
 using Microsoft.AspNetCore.Mvc;
-using PwdGen.Contracts;
+using PwdGen.Contracts.In;
 using PwdGen.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -103,7 +129,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
    .AddControllers();
 
-builder.Services.AddValidatedValues(); // JSON converters + Swagger schema filters :contentReference[oaicite:1]{index=1}
+
+// *** Activate Validated Values (VV) support
+// *** JSON converters + Swagger schema filters
+builder.Services.AddValidatedValues();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -118,11 +147,11 @@ if (app.Environment.IsDevelopment())
    app.UseSwaggerUI();
 }
 
-app.MapPost("/pwd", (PasswordInfo info, PwdGenerationService svc) =>
+// Minimal API usage example
+app.MapPost("/pwd", (PasswordGenerationConfigDTO config, PwdGenerationService svc) =>
 {
-   string password = svc.GeneratePassword(
-      info.chars.HasValue ? info.chars.NonNull.Value : null,
-      info.length.Value);
+   string? chars = config.Chars.HasValue ? config.Chars.NonNull.Value : null;
+   string password = svc.GeneratePassword(chars, config.Length.Value);
    return password;
 })
 .WithName("Pwd")
@@ -133,114 +162,436 @@ app.MapControllers();
 app.Run();
 ```
 
-That’s all you need: VV plugs into JSON and Swagger automatically.
+That is all you need: VV plugs into JSON and Swagger automatically.
 
 ---
 
 ## Concrete validated types (out of the box)
 
-The library ships with several ready-made validated types you can use immediately.
+The library ships with several ready made validated types you can use immediately.
 
 ### Email
 
-`Email` wraps a string with bounds and `[EmailAddress]` validation. :contentReference[oaicite:5]{index=5}
+`Email` wraps a string with bounds and email format validation (using `EmailAddressAttribute` internally).  
+It is implemented as a `BoundedPrintableString<Email>` archetype plus extra validation.
 
-```csharp
-using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Core;
+See implementation at:
 
-namespace Owasp.Untrust.VV;
-
-public class Email : BoundedString<Email>, ICreatable<Email, string>
-{
-   public static Email CreateNonValidated(string valueToWrap)
-   {
-      return new Email { Value = valueToWrap, Bounds = _Bounds(3, 256) };
-   }
-
-   protected override bool ExtraValidation()
-   {
-      return new EmailAddressAttribute().IsValid(Value);
-   }
-}
-```
+- `Owasp.Untrust.VV/Email.cs`
 
 ### Phone
 
-`Phone` wraps a string with bounds and `[Phone]` validation. :contentReference[oaicite:6]{index=6}
+`Phone` wraps a string with bounds and phone format validation (using `PhoneAttribute` internally).  
+It is implemented as a `BoundedAnyContentString<Phone>` archetype plus extra validation that ensure its character are valid for a phone.
 
-```csharp
-using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Core;
+See implementation at:
 
-namespace Owasp.Untrust.VV;
-
-public class Phone : BoundedString<Phone>, ICreatable<Phone, string>
-{
-   public static Phone CreateNonValidated(string valueToWrap)
-   {
-      return new Phone { Value = valueToWrap, Bounds = _Bounds(3, 256) };
-   }
-
-   protected override bool ExtraValidation()
-   {
-      return new PhoneAttribute().IsValid(Value);
-   }
-}
-```
+- `Owasp.Untrust.VV/Phone.cs`
 
 ### CreditCard
 
-`CreditCard` wraps a string with bounds and `[CreditCard]` validation. :contentReference[oaicite:7]{index=7}
+`CreditCard` wraps a string with bounds and credit card format validation (using `CreditCardAttribute` internally).  
+It is implemented as a `BoundedAnyContentString<CreditCard>` archetype plus extra validation to ensure its characters are valid for a credit-card.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/CreditCard.cs`
+
+### DeviceId
+
+`DeviceId` is a generic IoT device identifier: letters, digits, dash, underscore, colon, and slash.  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/DeviceId.cs`
+
+### Hex
+
+`Hex` is a general-purpose hex value (1–512 hex digits, no `0x` prefix).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Hex.cs`
+
+### IP with `IpAddressPolicy`
+
+`IP<TIpPolicy>` wraps `IPAddress` and enforces whether addresses are internal/external and/or IPv4/IPv6 based on a chosen `IpAddressPolicy` (for example `AnyIp`, `InternalIp`, `ExternalIp`, `InternalIpV4`, `ExternalIpV4`).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/IP.cs`
+- `Owasp.Untrust.VV/IpAddressPolicy.cs`
+
+### MacAddress
+
+`MacAddress` represents a MAC address in standard textual form (for example `AA:BB:CC:DD:EE:FF`).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/MacAddress.cs`
+
+### SSN
+
+`SSN` represents a US Social Security Number (`AAA-GG-SSSS`), including checks that disallow `000/666/9xx` prefixes, `00` group, and `0000` serial.  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/SSN.cs`
+
+### Username
+
+`Username` represents a username that cannot start with a digit and then allows letters, digits, and underscore.  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Username.cs`
+
+### WiFiNetwork
+
+`WiFiNetwork` represents a Wi-Fi SSID (1–32 printable ASCII characters, no control characters).  
+
+See implementation at:
+
+- `Owasp.Untrust.VV/WiFiNetwork.cs`
+
+You can use these directly in your request or response models and services:
 
 ```csharp
-using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Core;
+public sealed record ContactDTO(Email Email, Optional<Phone> Phone);
 
-namespace Owasp.Untrust.VV;
+public sealed record PaymentInfoDTO(CreditCard CardNumber, Name NameOnCard, CVV Cvv);
+```
 
-public class CreditCard : BoundedString<CreditCard>, ICreatable<CreditCard, string>
+Wherever an `Email`, `Phone`, `CreditCard`, `Name` or `CVV` exists, it has passed its respective validation.
+
+---
+
+## Archetypes and helpers
+
+This section gives an overview of the main archetypes. For details, see the corresponding `.cs` files in the repository.
+
+### `Bounds<T>`
+
+Represents an inclusive range of values (for numbers or lengths).  
+Used by the bounded archetypes to define allowed ranges.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/Bounds.cs`
+
+### `ICreatable<TWrapper, TValue>`
+
+Interface implemented by all wrapper types so archetypes and Core can construct them internally:
+
+```csharp
+public interface ICreatable<TWrapper, TValue>
 {
-   public static CreditCard CreateNonValidated(string valueToWrap)
-   {
-      return new CreditCard { Value = valueToWrap, Bounds = _Bounds(3, 256) };
-   }
+   static abstract TWrapper CreateNonValidated(TValue valueToWrap);
+}
+```
 
-   protected override bool ExtraValidation()
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/ICreatable.cs`
+
+### `BoundedNumber<TWrapper, TValue>`
+
+Archetype for numeric ranges.
+
+- Use when you want a validated number such as `Age`, `RetryCount`, or `PasswordLength` with a min and max range.
+- Constraints:
+  - `TValue` implements `INumber<TValue>`
+  - `TWrapper` implements `ICreatable<TWrapper, TValue>` and derives from `BoundedNumber<TWrapper, TValue>`
+- Configuration:
+  - `Bounds<TValue> Bounds` (init only) defines the allowed range.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds` in an object initializer, for example:  
+    `new Age { Value = valueToWrap, Bounds = s_bounds }`.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/BoundedNumber.cs`
+
+### `SingleLine<TWrapper, TTabPolicy>`
+### `Multiline<TWrapper, TTabPolicy>`
+
+Archetype for strings with length constraints and a tab policy.
+
+- Use when you only care about min and max length, not content pattern.
+- Use when you allow any printable character (no control characters, except for tab [depending on TabPolicy] and maybe newline)
+- Newline is allowed only in the *Multiline* version
+- Tabs are allowed or rejected based on `TTabPolicy`, which implements `TabPolicy`.
+- Configuration:
+  - `Bounds<int> Bounds` (init only) defines min and max length in characters.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds`, for example:  
+    `new MySingleLine { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/SingleLine.cs`
+- `Owasp.Untrust.VV/Archetypes/Multiline.cs`
+
+### `TabPolicy`, `AcceptTab`, and `RejectTab`
+
+`TabPolicy` is a simple policy interface that controls whether the archetypes accept the tab character.
+
+- `TabPolicy` exposes a static `AllowTab()` method.
+- `AcceptTab` returns `true` and allows `\t`.
+- `RejectTab` returns `false` and rejects `\t`.
+
+You use these as the `TTabPolicy` type parameter for `SingleLine<,>` and `Multiline<,>`:
+
+- `SingleLine<MyWrapper, AcceptTab>` → tabs allowed.
+- `SingleLine<MyWrapper, RejectTab>` → tabs rejected.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/TabPolicy.cs`
+
+### `RegexString<TWrapper>`
+
+Archetype for strings validated by both length and regex.
+
+- Use when you need both a length range and a regex constraint.
+- Configuration:
+  - `Bounds<int> Bounds` (init only)
+  - `string Pattern` (init only)
+  - *\[optional\]* `RegexOptions RegexOptions` (init only, defaults to `RegexOptions.None`)
+  - *\[optional\]* `TimeSpan Timeout` (init only, defaults to 100ms)  
+- Concrete type init:
+  - In `CreateNonValidated`, you set `Value`, `Bounds`, `Pattern`, and optionally `RegexOptions` and `Timeout` in the initializer.
+
+Regex compilation, caching, options, and timeout are handled in the Core base class.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/RegexString.cs`
+
+### `HexString<TWrapper>`
+
+Archetype for hex encoded values.
+
+- Use when the underlying value is a hex string (IDs, tokens, hashes, etc.).
+- Configuration:
+  - `Bounds<int> Bounds` (init only) for min and max hex length.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds`, for example:  
+    `new MyHex { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+
+Behavior:
+
+- Hex validation is built in at the Core level (canonical hex pattern).
+- Conversion helpers (for example to `int`, `long`, `byte[]`) are provided by the base class.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/HexString.cs`
+
+### `Base64<TWrapper, TVariant>`
+
+Archetype for base64-encoded values, with behavior controlled by a variant policy type.
+
+- Use when the underlying value is a base64 string (binary IDs, tokens, keys, etc.).
+- Configuration:
+  - `Bounds<int> Bounds` (init only) for min and max base64 length.
+  - `TVariant` is a policy type implementing `Base64Variant` and controlling which base64 alphabet is allowed.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set at least `Value` and `Bounds`, for example:  
+    `new MyBase64 { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+
+Behavior:
+
+- Delegates base64-specific parsing and validation to `Base64Base<TWrapper, TVariant>` in Core.
+- Uses the regex provided by `TVariant.Regex()` to validate allowed characters and padding.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/Base64.cs`
+
+### `Base64Variant`, `Standard`, and `UrlSafe`
+
+`Base64Variant` is a policy interface used to define which base64 alphabet and padding rules are valid.
+
+- `Base64Variant` exposes a static `Regex()` method that returns the compiled regex for the allowed alphabet.
+- `Standard` implements the standard Base64 alphabet (`A–Z`, `a–z`, `0–9`, `+`, `/`) with `=` padding.
+- `UrlSafe` implements the URL-safe Base64 alphabet (`A–Z`, `a–z`, `0–9`, `_`, `-`) with `=` padding.
+
+You use these as the `TVariant` type parameter for `Base64<,>`:
+
+- `Base64<MyWrapper, Standard>` → standard Base64.
+- `Base64<MyWrapper, UrlSafe>` → URL-safe Base64.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/Base64Variant.cs`
+
+### `SingleWord<TWrapper>`
+
+Archetype for single ASCII words (letters only).
+
+- Built on top of `RegexStringBase<TWrapper>`.
+- Ensures all characters are ASCII letters (a single word, no spaces or punctuation).
+- Configuration:
+  - `Bounds<int> Bounds` (init only) defines min and max length in characters.
+- Concrete type init:
+  - In `CreateNonValidated`, you must set `Value` and `Bounds`, for example:  
+    `new MyWord { Value = valueToWrap, Bounds = _Bounds(min, max) }`.
+- The regex pattern (`^[A-Za-z]+$`) and a shared regex cache key are provided by the archetype and do not need to be configured in the concrete type.
+
+See implementation at:
+
+- `Owasp.Untrust.VV/Archetypes/SingleWord.cs`
+
+### Policy types as generic parameters
+
+Several archetypes use *policy types* as generic parameters to control behavior at the type level:
+
+- `SingleLine<TWrapper, TTabPolicy>` / `Multiline<TWrapper, TTabPolicy>` use `TTabPolicy : TabPolicy` to decide whether tab characters are allowed.
+- `Base64<TWrapper, TVariant>` uses `TVariant : Base64Variant` to choose the base64 alphabet and padding rules.
+
+This allows you to:
+
+- Select behavior by choosing a type (for example `AcceptTab` vs `RejectTab`, `Standard` vs `UrlSafe`).
+- Introduce your own policies by implementing the corresponding interface (for example a custom `Base64Variant` with a different alphabet or a custom `TabPolicy` that restricts tabs in specific contexts).
+
+Once you choose the policy type in the generic parameters, it is enforced consistently everywhere that validated value type is used.
+
+---
+
+## Example: password generator API
+
+This example shows how to use archetypes to define:
+
+- `PasswordLength` using `BoundedNumber`
+- `PasswordChars` using a custom building block based on `BoundedString`
+- `PasswordGenerationConfigDTO` as a DTO
+- API endpoints that consume these validated values
+
+### Domain type: `PasswordLength` (numeric archetype)
+
+```csharp
+// src/PwdGen/Domain/PasswordLength.cs
+using Owasp.Untrust.VV.Archetypes;
+
+namespace PwdGen.Contracts.In;
+
+public sealed class PasswordLength
+   : BoundedNumber<PasswordLength, int>, ICreatable<PasswordLength, int>
+{
+   // Accept password lengths between 1 and 10 characters.
+   private static readonly Bounds<int> s_bounds = _Bounds(8, 64);
+
+   public static PasswordLength CreateNonValidated(int valueToWrap)
    {
-      return new CreditCardAttribute().IsValid(Value);
+      return new PasswordLength
+      {
+         Value = valueToWrap,
+         Bounds = s_bounds,
+      };
    }
 }
 ```
 
-You can use these directly in your request/response models and services:
+### User defined building block: `DistinctPrintableChars<TWrapper>`
+
+This is a reusable building block for “distinct printable characters” that you define in your own project on top of `BoundedAnyContentStringBase<TWrapper>`.
 
 ```csharp
-public record ContactInfo(Email email, Optional<Phone> phone);
-public record PaymentInfo(CreditCard cardNumber);
+// src/PwdGen/Contracts/In/Build/DistinctPrintableChars.cs
+using System.Linq;
+using Owasp.Untrust.VV.Archetypes;
+using Owasp.Untrust.VV.Core;
+
+namespace PwdGen.Contracts.In.Build;
+
+public abstract class DistinctPrintableChars<TWrapper> : BoundedAnyContentStringBase<TWrapper>
+   where TWrapper : DistinctPrintableChars<TWrapper>, ICreatable<TWrapper, string>
+{
+   protected override ValidationResultHolder ChainableValidation()
+   {
+      ValidationResultHolder result = base.ChainableValidation();
+      if (!result.IsValid)
+      {
+         return result;
+      }
+
+      // All characters must be distinct.
+      if (Value.Distinct().Count() != Value.Length)
+      {
+         result.Invalidate();
+         return result;
+      }
+
+      // No control or surrogate characters.
+      foreach (char c in Value)
+      {
+         if (char.IsControl(c) || char.IsHighSurrogate(c) || char.IsLowSurrogate(c))
+         {
+            result.Invalidate();
+            break;
+         }
+      }
+
+      return result;
+   }
+}
 ```
 
-VV will ensure that wherever an `Email`, `Phone`, or `CreditCard` exists, it has passed its respective validation.
+### Domain type: `PasswordChars` (using the building block)
 
----
+```csharp
+// src/PwdGen/Domain/PasswordChars.cs
+using Owasp.Untrust.VV.Archetypes;
+using PwdGen.Contracts.In.Build;
 
-## Example: Password generator API
+namespace PwdGen.Contracts.In;
 
-Using the built-in password types in Minimal APIs and controllers.
+public sealed class PasswordChars
+   : DistinctPrintableChars<PasswordChars>, ICreatable<PasswordChars, string>
+{
+   // For example, require between 4 and 128 distinct printable characters.
+   private static readonly Bounds<int> s_bounds = _Bounds(4, 128);
+
+   public static PasswordChars CreateNonValidated(string valueToWrap)
+   {
+      return new PasswordChars
+      {
+         Value = valueToWrap,
+         Bounds = s_bounds,
+      };
+   }
+}
+```
+
+### DTO: `PasswordGenerationConfigDTO`
+
+```csharp
+// src/PwdGen/Contracts/In/PasswordGenerationConfigDTO.cs
+using Owasp.Untrust.VV;
+using PwdGen.Domain;
+
+namespace PwdGen.Contracts.In;
+
+/// <summary>
+/// Input DTO for password generation:
+/// - Length: required, validated via PasswordLength
+/// - Chars: optional, validated via PasswordChars when present
+/// </summary>
+public sealed record PasswordGenerationConfigDTO(
+   PasswordLength Length,
+   Optional<PasswordChars> Chars);
+```
 
 ### Minimal API usage
 
-`PasswordInfo` is used directly as the request body; `Optional<PasswordChars>` is unwrapped safely: :contentReference[oaicite:8]{index=8}
+`PasswordGenerationConfigDTO` is used directly as the request body. `Optional<PasswordChars>` is unwrapped safely:
 
 ```csharp
-app.MapPost("/pwd", (PasswordInfo info, PwdGenerationService svc) =>
+app.MapPost("/pwd", (PasswordGenerationConfigDTO config, PwdGenerationService svc) =>
 {
-   string password = svc.GeneratePassword(
-      info.chars.HasValue ? info.chars.NonNull.Value : null,
-      info.length.Value);
+   string? chars = config.Chars.HasValue ? config.Chars.NonNull.Value : null;
+   string password = svc.GeneratePassword(chars, config.Length.Value);
    return password;
 })
 .WithName("Pwd")
@@ -249,7 +600,7 @@ app.MapPost("/pwd", (PasswordInfo info, PwdGenerationService svc) =>
 
 ### Controller usage with query parameters
 
-Validated values also work as query-bound parameters:
+Validated values also work as query bound parameters:
 
 ```csharp
 [ApiController]
@@ -259,215 +610,8 @@ public class PasswordController : ControllerBase
    [HttpGet("pwdg")]
    public IActionResult GenPwd([FromQuery] PasswordLength length, PwdGenerationService svc)
    {
-      var pwd = svc.GeneratePassword(null, length.Value);
+      string pwd = svc.GeneratePassword(null, length.Value);
       return Ok(pwd);
-   }
-}
-```
-
----
-
-## Core building blocks (with source examples)
-
-### `BoundedNumber<TWrapper, ValueT>`
-
-Base class for numeric validated values with min/max range. :contentReference[oaicite:9]{index=9}
-
-```csharp
-using System.Numerics;
-
-using Owasp.Untrust.VV.Core;
-
-namespace Owasp.Untrust.VV.Build;
-
-public abstract class BoundedNumber<TWrapper, ValueT> : ValidatedValue<TWrapper, ValueT, SelfParsableAdapter<ValueT>>
-   where TWrapper : BoundedNumber<TWrapper, ValueT>, ICreatable<TWrapper, ValueT>
-   where ValueT : INumber<ValueT>
-{
-   protected static Bounds<ValueT> _Bounds(ValueT min, ValueT max) { return new Bounds<ValueT>(min, max); }
-   public required Bounds<ValueT> Bounds { get; init; }
-
-   protected override ValidationResultHolder ChainableValidation()
-   {
-      ValidationResultHolder result = base.ChainableValidation();
-      if (Value < Bounds.Min || Value > Bounds.Max)
-      {
-         result.Invalidate();
-      }
-      return result;
-   }
-}
-```
-
-### `BoundedString<TWrapper>`
-
-Base class for string validated values with length bounds. :contentReference[oaicite:10]{index=10}
-
-```csharp
-using System.Numerics;
-using Owasp.Untrust.VV.Core;
-
-namespace Owasp.Untrust.VV.Build;
-
-public abstract class BoundedString<TWrapper> : ValidatedValue<TWrapper, string, SelfParsableAdapter<string>>
-   where TWrapper : BoundedString<TWrapper>, ICreatable<TWrapper, string>
-{
-   protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
-   public required Bounds<int> Bounds { get; init; }
-
-   protected override ValidationResultHolder ChainableValidation()
-   {
-      ValidationResultHolder result = base.ChainableValidation();
-      if (Value.Length < Bounds.Min || Value.Length > Bounds.Max)
-      {
-         result.Invalidate();
-      }
-      return result;
-   }
-}
-```
-
-### `RegexString<TWrapper>`
-
-Bounded string + regex, with safe timeout and optional compilation. :contentReference[oaicite:11]{index=11}
-
-```csharp
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using Owasp.Untrust.VV.Core;
-
-namespace Owasp.Untrust.VV.Build;
-
-public abstract class RegexString<TWrapper> : BoundedString<TWrapper>
-   where TWrapper : RegexString<TWrapper>, ICreatable<TWrapper, string>
-{
-   public required string Pattern { get; init; }
-
-   // Regex options for this wrapper type
-   public RegexOptions RegexOptions { get; init; } = RegexOptions.None;
-   public TimeSpan Timeout { get; init; } = new TimeSpan(1_000_000); // 100ms
-    
-   // Shared cache of compiled regexes, keyed by wrapper type
-   private static readonly ConcurrentDictionary<Type, Regex> _compiledRegexCache = new();
-
-   private Regex GetRegex()
-   {
-      var options = RegexOptions;
-
-      // If not compiled, just create a fresh Regex (cheap for occasional use)
-      if ((options & RegexOptions.Compiled) == 0)
-      {
-         return new Regex(Pattern, options, Timeout);
-      }
-
-      // Compiled: cache per TWrapper
-      var key = typeof(TWrapper);
-      return _compiledRegexCache.GetOrAdd(
-         key,
-         _ => new Regex(Pattern, options, Timeout)
-      );
-   }
-
-   protected override ValidationResultHolder ChainableValidation() {
-      var result = base.ChainableValidation();
-      if (!result.IsValid) {
-         return result;
-      }
-      Debug.Assert(Value != null);
-
-      var regex = GetRegex();
-      if (!regex.IsMatch(Value))
-      {
-         result.Invalidate();
-      }
-
-      return result;
-   }
-}
-```
-
-### `SingleWord<TWrapper>`
-
-A bounded string restricted to ASCII letters (a–z / A–Z). :contentReference[oaicite:13]{index=13}
-
-```csharp
-using Owasp.Untrust.VV.Core;
-
-namespace Owasp.Untrust.VV.Build;
-
-public abstract class SingleWord<TWrapper> : BoundedString<TWrapper>
-   where TWrapper : SingleWord<TWrapper>, ICreatable<TWrapper, string>
-{
-   protected override ValidationResultHolder ChainableValidation()
-   {
-      ValidationResultHolder result = base.ChainableValidation();
-      foreach (char c in Value.ToCharArray())
-      {
-         if (!char.IsAsciiLetter(c))
-         {
-            result.Invalidate();
-            break;
-         }
-      }
-      return result;
-   }
-}
-```
-
-### `Distinct<TValue>` (helper for distinct collections)
-
-Internal helper that carries bounds along with a `HashSet<TValue>`. :contentReference[oaicite:14]{index=14}
-
-```csharp
-using Owasp.Untrust.VV.Core;
-
-namespace Owasp.Untrust.VV.Build;
-
-class Distinct<TValue> : HashSet<TValue>
-{
-   protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
-   public required Bounds<int> Bounds { get; init; }
-}
-```
-
-### `WithDuplicates<TValue>` (data-annotations example)
-
-Example of using `IValidatableObject` + bounds for collection size. :contentReference[oaicite:15]{index=15}
-
-```csharp
-using System.ComponentModel.DataAnnotations;
-using Owasp.Untrust.VV.Core;
-
-namespace Owasp.Untrust.VV.Build;
-
-class WithDuplicates<TValue> : List<TValue>, IValidatableObject
-{
-   protected static Bounds<int> _Bounds(int minLength, int maxLength) { return new Bounds<int>(minLength, maxLength); }
-   public required Bounds<int> Bounds { get; init; }
-
-   public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-   {
-      var count = Count;
-
-      // Choose a member name so the error can be attached to the right place
-      var memberName = validationContext.MemberName
-                      ?? validationContext.DisplayName
-                      ?? "Values";
-
-      if (count < Bounds.Min)
-      {
-         yield return new ValidationResult(
-            $"At least {Bounds.Min} values are required, but {count} were provided.",
-            new[] { memberName });
-      }
-
-      if (count > Bounds.Max)
-      {
-         yield return new ValidationResult(
-            $"At most {Bounds.Max} values are allowed, but {count} were provided.",
-            new[] { memberName });
-      }
    }
 }
 ```
@@ -481,125 +625,93 @@ class WithDuplicates<TValue> : List<TValue>, IValidatableObject
 Typical pattern:
 
 ```csharp
+using Owasp.Untrust.VV.Archetypes;
+
 public sealed class Age : BoundedNumber<Age, int>, ICreatable<Age, int>
 {
+   private static readonly Bounds<int> s_bounds = _Bounds(0, 130);
+
    public static Age CreateNonValidated(int valueToWrap)
    {
-      return new Age { Value = valueToWrap, Bounds = _Bounds(0, 130) };
+      return new Age
+      {
+         Value = valueToWrap,
+         Bounds = s_bounds,
+      };
    }
-
-   protected override bool ExtraValidation() => true; // or your custom logic
 }
 ```
 
-**PasswordLength** – bounded integer, 1–10. :contentReference[oaicite:2]{index=2}
+Key points:
 
-```csharp
-using Owasp.Untrust.VV.Core;
-using Owasp.Untrust.VV.Build;
+- `Age` is sealed and derives from `BoundedNumber<Age, int>`.
+- Bounds are defined once in a static field.
+- Validation of value and bounds is handled by the archetype and the Core pipeline.
 
-namespace PwdGen.Contracts;
-
-public class PasswordLength : BoundedNumber<PasswordLength, int>, ICreatable<PasswordLength, int>
-{
-   public static PasswordLength CreateNonValidated(int valueToWrap)
-   {
-      return new PasswordLength { Value = valueToWrap, Bounds = _Bounds(1, 10) };
-   }
-
-   protected override bool ExtraValidation() { return true; }
-}
-```
+For additional domain rules (for example, “age must be 18 or above”), you can override the archetype hook (for example `ChainableValidation`) in the same way that `SingleWord<>` and `DistinctPrintableChars<>` do.
 
 ### 2. Using `RegexString`
 
-For structured strings (emails, slugs, IDs), you can:
+For structured strings such as emails, slugs, IDs, and usernames, you can:
 
 - Inherit from `RegexString<TWrapper>`
-- Provide a `Pattern`, `RegexOptions`, and `Bounds`
+- Provide a `Pattern`, `RegexOptions` (through configuration), and `Bounds`
 
-You already do something similar with `DistinctPrintableChars<TWrapper>` for password characters.
+Archetype logic handles:
 
+- Length checks via `Bounds<int>`
+- Regex compilation and caching
+- Timeout for regex execution
 
-### 3. Using `ValidatedValue` directly
-
-For more complex cases:
-
-- Inherit from `ValidatedValue<TWrapper, ValueT, ParserT>`
-- Implement:
-  - `ExtraValidation` for domain-specific checks
-  - Any additional properties/methods you need
-- Optionally define intermediate abstract base classes (like `BoundedString`) for reuse.
+Your type only needs to define the correct pattern and bounds.
 
 ---
 
 ## Defining your own building blocks
 
-If you see a recurring pattern across multiple VV types:
+If you see a recurring pattern across multiple validated value types:
 
-- Create an abstract base (e.g. `NonEmptyLowercaseString<TWrapper> : RegexString<TWrapper>`)
+- Create an abstract base in your own code (for example `DistinctPrintableChars<TWrapper> : BoundedString<TWrapper>`).
 - Encapsulate:
-  - A specific regex
+  - A specific regex or character level rule
   - Bounds
   - Shared validation behavior
 
 Then concrete types in that family only need to:
 
-- Set their specific bounds (if different)
-- Possibly override `ExtraValidation` for additional rules
+- Set their specific bounds (if they differ)
+- Optionally override the hook for more domain specific rules
 
-This layered approach is how `BoundedString`, `RegexString`, `DistinctPrintableChars`, and `SingleWord` are built and reused across multiple domain types.
+The `DistinctPrintableChars<TWrapper>` and `PasswordChars` example above follows exactly this pattern:
 
-Here's an example of defining `DistinctPrintableChars` - a building-block class later used to create a `PasswordChars` validated values type:
+1. `DistinctPrintableChars<TWrapper>` is a building block based on the `BoundedString` archetype.
+2. `PasswordChars` is a validated value that inherits from this building block and fixes its own bounds.
 
-```csharp contracts/in/buildblocks/DistinctPrintableChars.cs
-using Owasp.Untrust.VV.Build;
-using Owasp.Untrust.VV.Core;
+---
 
-namespace PwdGen.Contracts.In.Build;
+## Extending VV with new archetypes (Core)
 
-public abstract class DistinctPrintableChars<TWrapper> : BoundedString<TWrapper>
-    where TWrapper : DistinctPrintableChars<TWrapper>, ICreatable<TWrapper, string>
-{
-    protected override ValidationResultHolder ChainableValidation()
-    {
-        ValidationResultHolder result = base.ChainableValidation();
-        if (Value.Distinct().Count() != Value.Length)
-        {
-                result.Invalidate();
-        }
-        else
-        {
-            foreach (char c in Value.ToCharArray())
-            {
-                if (char.IsControl(c) || char.IsHighSurrogate(c) || char.IsLowSurrogate(c))
-                {
-                    result.Invalidate();
-                    break;
-                }
-            }
-        }
-        return result;
-    }
-}
-```
+If the existing archetypes are not enough, you can build your own archetype on top of the Core base classes in `Owasp.Untrust.VV.Core`:
 
-After the building block is defined, it can be used to create validated value types, in this case a `PasswordChars` class for 8–64 distinct printable characters :contentReference[oaicite:3]{index=3}
+- `Base64Base<TWrapper, TVariant>` where TVariant is a `Base64Variant`
+- `BoundedNumberBase<TWrapper, TValue>`
+- `BoundedAnyContentStringBase<TWrapper>`
+- `HexStringBase<TWrapper>`
+- `RegexStringBase<TWrapper>`
+- `ValidatedValue<TWrapper, TValue, TParser>` (top-level base class) where TValue is the underlying value type and TParser is a class that implements `IQueryParsable<TValue>`
 
-```csharp
-using Owasp.Untrust.VV.Core;
-using Owasp.Untrust.VV.Build;
+- WARNING: Be careful with the BoundedAnyContentStringBase! The string's content is NOT checked/validated and it COULD contain control characters.
 
-public class PasswordChars : DistinctPrintableChars<PasswordChars>, ICreatable<PasswordChars, string>
-{
-   public static PasswordChars CreateNonValidated(string valueToWrap)
-   {
-      return new PasswordChars { Value = valueToWrap, Bounds = _Bounds(8, 64) };
-   }
+These base classes:
 
-   protected override bool ExtraValidation()
-   {
-      return true;
-   }
-}
-```
+- Expose abstract constraint methods such as `BoundsConstraint()` and `PatternConstraint()`.
+- Provide a chainable validation pipeline that archetypes hook into.
+- Allow you to add new archetypes that still integrate with JSON converters, Swagger schema filters, and the rest of the VV infrastructure.
+
+Typical flow:
+
+1. Create a new abstract base in Core that overrides the constraint methods and optionally adds extra validation.
+2. Optionally add a property style archetype in `Owasp.Untrust.VV.Archetypes` that wraps your base and exposes constraints as init only properties, similar to `BoundedNumber<>` and `RegexString<>`.
+3. Have your domain specific validated types derive from your new archetype.
+
+You pick one archetype that best describes the validation pattern.

@@ -3,15 +3,15 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace Owasp.Untrust.VV.Archetypes;
 
-public struct Bounds<ValueT>
-    where ValueT : INumber<ValueT>
+public struct Bounds<TValue>
+    where TValue : INumber<TValue>
 {
     public record DummyRecord() { }
     public static readonly DummyRecord ALLOW_NEGATIVE_VALUES = new DummyRecord();
 
-    public Bounds(ValueT min, ValueT max)
+    public Bounds(TValue min, TValue max)
     {
-        if (min < ValueT.Zero || max < ValueT.Zero) {
+        if (min < TValue.Zero || max < TValue.Zero) {
             throw new ArgumentOutOfRangeException(nameof(min), "Bounds must be non-negative.");
         }
         if (min > max) {
@@ -21,7 +21,7 @@ public struct Bounds<ValueT>
         Max = max;
     }
 
-    public Bounds(ValueT min, ValueT max, DummyRecord allowNegativeValues)
+    public Bounds(TValue min, TValue max, DummyRecord allowNegativeValues)
     {
         if (min > max) {
             throw new ArgumentException("min must be <= max.");       
@@ -30,6 +30,6 @@ public struct Bounds<ValueT>
         Max = max;
     }
 
-    public readonly ValueT Min;
-    public readonly ValueT Max;
+    public readonly TValue Min;
+    public readonly TValue Max;
 }

@@ -38,7 +38,7 @@ public struct Optional<TWrapper> : IQueryParsable<Optional<TWrapper>>
         }
     }
 
-    /*static bool TryWrap<ValueT>(ValueT? value, out Optional<TWrapper> result)
+    /*static bool TryWrap<TValue>(TValue? value, out Optional<TWrapper> result)
     {
         if (value == null)
         {

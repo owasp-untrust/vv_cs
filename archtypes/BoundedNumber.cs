@@ -3,12 +3,12 @@ using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.Archetypes;
 
-public abstract class BoundedNumber<TWrapper, ValueT> : BoundedNumberBase<TWrapper, ValueT>
-    where TWrapper : BoundedNumber<TWrapper, ValueT>, ICreatable<TWrapper, ValueT>
-    where ValueT : INumber<ValueT>
+public abstract class BoundedNumber<TWrapper, TValue> : BoundedNumberBase<TWrapper, TValue>
+    where TWrapper : BoundedNumber<TWrapper, TValue>, ICreatable<TWrapper, TValue>
+    where TValue : INumber<TValue>
 {
-    protected static Bounds<ValueT> _Bounds(ValueT min, ValueT max) { return new Bounds<ValueT>(min, max); }
-    public required Bounds<ValueT> Bounds { get; init; }
+    protected static Bounds<TValue> _Bounds(TValue min, TValue max) { return new Bounds<TValue>(min, max); }
+    public required Bounds<TValue> Bounds { get; init; }
 
-    protected override Bounds<ValueT> BoundsConstraint() { return Bounds; }
+    protected override Bounds<TValue> BoundsConstraint() { return Bounds; }
 }

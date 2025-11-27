@@ -6,13 +6,13 @@ using Owasp.Untrust.VV.Archetypes;
 
 namespace Owasp.Untrust.VV.Core;
 
-public abstract class ValidatedValue<TWrapper, ValueT, ParserT> 
+public abstract class ValidatedValue<TWrapper, TValue, TParser> 
 : IQueryParsable<TWrapper> //, __IWrappableForOptional<TWrapper>
-    where TWrapper : ValidatedValue<TWrapper, ValueT, ParserT>, ICreatable<TWrapper, ValueT>
-    where ParserT : IQueryParsable<ValueT>
-    where ValueT : notnull
+    where TWrapper : ValidatedValue<TWrapper, TValue, TParser>, ICreatable<TWrapper, TValue>
+    where TParser : IQueryParsable<TValue>
+    where TValue : notnull
 {
-    public required ValueT Value { get; init; }
+    public required TValue Value { get; init; }
 
     public static bool TryParse(
         string? asStr,
@@ -20,9 +20,9 @@ public abstract class ValidatedValue<TWrapper, ValueT, ParserT>
         [MaybeNullWhen(false)] out TWrapper result)
     {
         if (asStr != null) {
-            ValueT value;
+            TValue value;
             #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            if (ParserT.TryParse(asStr, provider, out value))
+            if (TParser.TryParse(asStr, provider, out value))
             {
                 return TryWrap(value, out result);
             }
@@ -33,7 +33,7 @@ public abstract class ValidatedValue<TWrapper, ValueT, ParserT>
         return false;
     }
 
-    public static bool TryWrap(ValueT value, out TWrapper result)
+    public static bool TryWrap(TValue value, out TWrapper result)
     {
         result = TWrapper.CreateNonValidated(value);
         if (result.ChainableValidation().IsValid)
@@ -47,7 +47,7 @@ public abstract class ValidatedValue<TWrapper, ValueT, ParserT>
         return false;
     }
 
-    public static TWrapper Wrap(ValueT value)
+    public static TWrapper Wrap(TValue value)
     {
         TWrapper result;
         if (!TryWrap(value, out result))
@@ -62,7 +62,7 @@ public abstract class ValidatedValue<TWrapper, ValueT, ParserT>
     {
     }
 
-    protected ValidatedValue(ValueT value)
+    protected ValidatedValue(TValue value)
     {
         this.Value = value;
     }
@@ -81,7 +81,7 @@ public abstract class ValidatedValue<TWrapper, ValueT, ParserT>
     /*[EditorBrowsable(EditorBrowsableState.Never)]
     static bool __IWrappableForOptional<TWrapper>.__TryWrapBypassingCompileTimeValueTypeCheck(object valueAsObj, out TWrapper result)
     {
-        Debug.Assert(valueAsObj is ValueT);
-        return TryWrap((ValueT)valueAsObj, out result);
+        Debug.Assert(valueAsObj is TValue);
+        return TryWrap((TValue)valueAsObj, out result);
     }*/
 }

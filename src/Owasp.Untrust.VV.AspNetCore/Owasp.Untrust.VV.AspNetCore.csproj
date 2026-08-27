@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Owasp.Untrust.VV.AspNetCore</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../../ValueDescriptors_cs/src/Owasp.Untrust.ValueDescriptors/Owasp.Untrust.ValueDescriptors.csproj" />
+    <ProjectReference Include="../Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+</Project>

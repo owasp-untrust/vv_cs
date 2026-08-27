@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Owasp.Untrust.VV</PackageId>
+    <Description>Secure-by-construction validated values for .NET.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../ValueDescriptors_cs/src/Owasp.Untrust.ValueDescriptors/Owasp.Untrust.ValueDescriptors.csproj" />
+    <ProjectReference Include="../Owasp.Untrust.VV.Analyzers/Owasp.Untrust.VV.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../Owasp.Untrust.VV.Analyzers/bin/$(Configuration)/net8.0/Owasp.Untrust.VV.Analyzers.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+  </ItemGroup>
+</Project>

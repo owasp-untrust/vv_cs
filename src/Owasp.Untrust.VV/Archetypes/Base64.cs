@@ -7,7 +7,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A bounded Base64 value with an explicit alphabet/padding policy.</summary>
 public abstract class Base64<TSelf, TDisclosure, TVariant>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : Base64<TSelf, TDisclosure, TVariant>, IBoundedStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
     where TVariant : IBase64Variant

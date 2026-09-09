@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Owasp.Untrust.VV.AspNetCore</PackageId>
+    <Description>ASP.NET Core JSON, model-binding, and OpenAPI integration for OWASP Untrust validated values.</Description>
+    <PackageTags>owasp;security;validation;aspnetcore;json;openapi;swagger</PackageTags>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../../ValueDescriptors_cs/src/Owasp.Untrust.ValueDescriptors/Owasp.Untrust.ValueDescriptors.csproj" />
     <ProjectReference Include="../Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />

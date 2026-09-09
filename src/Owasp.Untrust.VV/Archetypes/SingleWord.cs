@@ -7,7 +7,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A bounded non-empty string containing only ASCII letters.</summary>
 public abstract class SingleWord<TSelf, TDisclosure>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : SingleWord<TSelf, TDisclosure>, IBoundedStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
 {

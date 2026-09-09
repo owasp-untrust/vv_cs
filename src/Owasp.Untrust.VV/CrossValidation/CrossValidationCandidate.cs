@@ -43,10 +43,23 @@ public abstract class CrossValidationCandidate<
 
     public sealed override string ToString() => ToPublicString();
 
+    public ValueTask<TReceiver> CompleteAsync(
+        ICrossValidation<TValue> validation,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(validation);
+        return CompleteCrossValidationAsync(validation.ValidateAsync, cancellationToken);
+    }
+
+    public ValueTask<TReceiver> CompleteAsync(
+        Func<TValue, CancellationToken, ValueTask<CrossValidationResult>> validateAsync,
+        CancellationToken cancellationToken = default) =>
+        CompleteCrossValidationAsync(validateAsync, cancellationToken);
+
     public static TCandidate Parse(string text, IFormatProvider? provider)
     {
         TValue validated = ValidationTraitsPipeline.Run<TValue, TTraits, TArchetype, TDisclosure>(text, provider);
-        return TCandidate.CreateValidated(validated);
+        return TCandidate.CreateValidated(new InternallyValidatedValue<TValue, TCandidate>(validated));
     }
 
     public static bool TryParse(
@@ -59,7 +72,7 @@ public abstract class CrossValidationCandidate<
                 provider,
                 out TValue? locallyValidated))
         {
-            result = TCandidate.CreateValidated(locallyValidated);
+            result = TCandidate.CreateValidated(new InternallyValidatedValue<TValue, TCandidate>(locallyValidated));
             return true;
         }
 
@@ -99,5 +112,6 @@ public abstract class CrossValidationCandidate<
 public interface ICrossValidationCandidateFactory<TSelf, TValue>
     where TValue : notnull
 {
-    static abstract TSelf CreateValidated(TValue locallyValidatedValue);
+    static abstract TSelf CreateValidated(
+        InternallyValidatedValue<TValue, TSelf> locallyValidatedValue);
 }

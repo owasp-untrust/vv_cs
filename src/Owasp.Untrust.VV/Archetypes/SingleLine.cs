@@ -7,7 +7,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A bounded, well-formed Unicode string with no line breaks or controls.</summary>
 public abstract class SingleLine<TSelf, TDisclosure, TTabPolicy>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : SingleLine<TSelf, TDisclosure, TTabPolicy>, IBoundedStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
     where TTabPolicy : ITabPolicy

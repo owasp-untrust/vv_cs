@@ -45,7 +45,7 @@ public sealed class PendingEncryption<TValue> : PendingSensitiveValue<TValue>
 
         cancellationToken.ThrowIfCancellationRequested();
         return new RetainedEncryptedValue<TValue, TDisclosure>(
-            SourceForExplicitRetention,
+            RawValueForExplicitRetention,
             envelope ?? throw new InvalidOperationException(
                 "The encryption provider returned no encrypted material."));
     }
@@ -79,24 +79,25 @@ public sealed class EncryptedOnlyValue<TValue, TDisclosure> :
 
 public sealed class RetainedEncryptedValue<TValue, TDisclosure> :
     IPubliclyRepresentable,
+    IExposableValue<TValue>,
     IRetainsPlaintextValue
     where TValue : notnull
     where TDisclosure : IDisclosurePolicy<AuthenticatedEncryptionEnvelope>
 {
-    private readonly IValidatedValue<TValue> _source;
+    private readonly TValue _plaintext;
     private readonly AuthenticatedEncryptionEnvelope _envelope;
 
     internal RetainedEncryptedValue(
-        IValidatedValue<TValue> source,
+        TValue plaintext,
         AuthenticatedEncryptionEnvelope envelope)
     {
-        _source = source ?? throw new ArgumentNullException(nameof(source));
+        _plaintext = plaintext ?? throw new ArgumentNullException(nameof(plaintext));
         _envelope = envelope ?? throw new ArgumentNullException(nameof(envelope));
     }
 
     public AuthenticatedEncryptionEnvelope Envelope => _envelope;
 
-    public TValue ExposeUnchecked() => _source.ExposeUnchecked();
+    public TValue ExposeUnchecked() => _plaintext;
 
     public object? ToPublicValue() =>
         PublicRepresentation<AuthenticatedEncryptionEnvelope, TDisclosure>

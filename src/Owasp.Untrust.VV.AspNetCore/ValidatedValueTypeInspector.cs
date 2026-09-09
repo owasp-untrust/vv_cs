@@ -6,22 +6,22 @@ namespace Owasp.Untrust.VV.AspNetCore;
 
 internal static class ValidatedValueTypeInspector
 {
-    internal const string CandidateMarkerName = "Owasp.Untrust.VV.CrossValidation.ICrossValidationCandidate";
-    internal const string EntityCandidateMarkerName = "Owasp.Untrust.VV.EntityAccess.IEntityResolutionCandidate";
-    internal const string ReceiverMarkerName = "Owasp.Untrust.VV.CrossValidation.ICrossValidatedValue";
-    internal const string AuthorizedEntityMarkerName = "Owasp.Untrust.VV.EntityAccess.IAuthorizedEntity";
+    internal const string CANDIDATE_MARKER_NAME = "Owasp.Untrust.VV.CrossValidation.ICrossValidationCandidate";
+    internal const string ENTITY_CANDIDATE_MARKER_NAME = "Owasp.Untrust.VV.EntityAccess.IEntityResolutionCandidate";
+    internal const string RECEIVER_MARKER_NAME = "Owasp.Untrust.VV.CrossValidation.ICrossValidatedValue";
+    internal const string AUTHORIZED_ENTITY_MARKER_NAME = "Owasp.Untrust.VV.EntityAccess.IAuthorizedEntity";
 
     internal static bool IsPubliclyRepresentable(Type type) =>
         typeof(IPubliclyRepresentable).IsAssignableFrom(type);
 
     internal static bool IsCandidate(Type type) =>
-        ImplementsMarker(type, CandidateMarkerName) ||
-        ImplementsMarker(type, EntityCandidateMarkerName);
+        ImplementsMarker(type, CANDIDATE_MARKER_NAME) ||
+        ImplementsMarker(type, ENTITY_CANDIDATE_MARKER_NAME);
 
-    internal static bool IsReceiver(Type type) => ImplementsMarker(type, ReceiverMarkerName);
+    internal static bool IsReceiver(Type type) => ImplementsMarker(type, RECEIVER_MARKER_NAME);
 
     internal static bool IsAuthorizedEntity(Type type) =>
-        ImplementsMarker(type, AuthorizedEntityMarkerName);
+        ImplementsMarker(type, AUTHORIZED_ENTITY_MARKER_NAME);
 
     internal static bool IsSelfParsable(Type type) =>
         type.GetInterfaces().Any(candidate =>
@@ -76,11 +76,11 @@ internal static class ValidatedValueTypeInspector
 
     internal static bool TryGetStaticProperty(Type type, string simpleName, out object? value)
     {
-        const BindingFlags flags =
+        const BindingFlags FLAGS =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy;
 
         var property = type
-            .GetProperties(flags)
+            .GetProperties(FLAGS)
             .FirstOrDefault(candidate =>
                 candidate.GetIndexParameters().Length == 0 &&
                 (candidate.Name == simpleName ||

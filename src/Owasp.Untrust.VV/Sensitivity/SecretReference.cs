@@ -9,7 +9,7 @@ namespace Owasp.Untrust.VV.Sensitivity;
 /// </summary>
 public sealed class SecretReference : IEquatable<SecretReference>
 {
-    public const int MaximumLength = 512;
+    public const int MAXIMUM_LENGTH = 512;
 
     public SecretReference(string path)
     {
@@ -20,11 +20,11 @@ public sealed class SecretReference : IEquatable<SecretReference>
             throw new ArgumentException("A secret reference must not be blank.", nameof(path));
         }
 
-        if (path.Length > MaximumLength)
+        if (path.Length > MAXIMUM_LENGTH)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(path),
-                $"A secret reference must not exceed {MaximumLength} characters.");
+                $"A secret reference must not exceed {MAXIMUM_LENGTH} characters.");
         }
 
         if (path[0] is '/' or '\\' ||

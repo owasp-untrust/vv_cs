@@ -2,6 +2,7 @@
   <PropertyGroup>
     <PackageId>Owasp.Untrust.VV</PackageId>
     <Description>Secure-by-construction validated values for .NET.</Description>
+    <PackageTags>owasp;security;validation;validated-values;input-validation;privacy</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../../ValueDescriptors_cs/src/Owasp.Untrust.ValueDescriptors/Owasp.Untrust.ValueDescriptors.csproj" />
@@ -10,7 +11,8 @@
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../Owasp.Untrust.VV.Analyzers/bin/$(Configuration)/net8.0/Owasp.Untrust.VV.Analyzers.dll"
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+    <None Include="../Owasp.Untrust.VV.Analyzers/bin/$(Configuration)/netstandard2.0/Owasp.Untrust.VV.Analyzers.dll"
           Pack="true"
           PackagePath="analyzers/dotnet/cs"
           Visible="false" />

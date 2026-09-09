@@ -182,7 +182,9 @@ public sealed class IntegrationJsonTests
 
         public static IntegrationCandidate Parse(string raw, IFormatProvider? provider)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(raw);
+            if (string.IsNullOrWhiteSpace(raw))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(raw));
+
             return new IntegrationCandidate(raw);
         }
 
@@ -232,7 +234,9 @@ public sealed class IntegrationJsonTests
 
         public static IntegrationEntityCandidate Parse(string raw, IFormatProvider? provider)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(raw);
+            if (string.IsNullOrWhiteSpace(raw))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(raw));
+
             return new IntegrationEntityCandidate(raw);
         }
 

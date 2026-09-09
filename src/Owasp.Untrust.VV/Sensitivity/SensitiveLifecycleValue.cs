@@ -38,7 +38,7 @@ public abstract class PendingSensitiveValue<TValue> : IPubliclyRepresentable
     protected TValue ExposeForTransformation() =>
         _sourceStorage.GetRawValueForInternalUse();
 
-    protected IValidatedValue<TValue> SourceForExplicitRetention => _source;
+    protected TValue RawValueForExplicitRetention => ExposeForTransformation();
 
     public object ToPublicValue() => ToPublicString();
 

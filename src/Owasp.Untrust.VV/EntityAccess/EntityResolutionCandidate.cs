@@ -15,7 +15,8 @@ public interface IEntityResolutionCandidate : IPubliclyRepresentable
 public interface IEntityResolutionCandidateFactory<TSelf, TId>
     where TId : notnull
 {
-    static abstract TSelf CreateValidated(TId locallyValidatedId);
+    static abstract TSelf CreateValidated(
+        InternallyValidatedValue<TId, TSelf> locallyValidatedId);
 }
 
 /// <summary>
@@ -50,10 +51,46 @@ public abstract class EntityResolutionCandidate<
 
     public sealed override string ToString() => ToPublicString();
 
+    public async ValueTask<AuthorizedEntity<TEntity>> AuthorizeAsync<TEntity, TSubject>(
+        IEntityAccessRepository<TId, TEntity, TSubject> repository,
+        TSubject subject,
+        EntityAccessQuery query,
+        IAuthorizationVerifier<TEntity, TSubject> authorizationVerifier,
+        CancellationToken cancellationToken = default)
+        where TEntity : notnull
+        where TSubject : notnull
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(subject);
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(authorizationVerifier);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        EntityAccessLookupResult<TEntity> lookup = await repository
+            .LoadForAccessAsync(_locallyValidatedId, subject, query, cancellationToken)
+            .ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!lookup.Found)
+        {
+            throw new UnauthorizedAccessException("The entity was not found or is not accessible.");
+        }
+
+        AuthorizationScopeSet grantedScopes = await authorizationVerifier
+            .VerifyAsync(lookup, subject, query, cancellationToken)
+            .ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!grantedScopes.ContainsAll(query.RequestedScopes))
+        {
+            throw new UnauthorizedAccessException("The entity is not authorized for the requested scopes.");
+        }
+
+        return new AuthorizedEntity<TEntity>(lookup.Entity!, grantedScopes);
+    }
+
     public static TCandidate Parse(string text, IFormatProvider? provider)
     {
         TId validated = ValidationTraitsPipeline.Run<TId, TTraits, TArchetype, TDisclosure>(text, provider);
-        return TCandidate.CreateValidated(validated);
+        return TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
     }
 
     public static bool TryParse(
@@ -66,7 +103,7 @@ public abstract class EntityResolutionCandidate<
                 provider,
                 out TId? validated))
         {
-            result = TCandidate.CreateValidated(validated);
+            result = TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
             return true;
         }
 
@@ -228,4 +265,3 @@ public abstract class EntityResolutionCandidate<
         return lookup.GetFoundEntity();
     }
 }
-

@@ -1,5 +1,6 @@
 #pragma warning disable CS1591
 using System.Diagnostics.CodeAnalysis;
+using Owasp.Untrust.ValueDescriptors.Core;
 
 namespace Owasp.Untrust.VV.Sensitivity;
 
@@ -8,7 +9,7 @@ namespace Owasp.Untrust.VV.Sensitivity;
 /// copied so a provider or caller cannot mutate a stored hash, nonce, tag, or
 /// ciphertext after construction.
 /// </summary>
-public sealed class BinaryArtifact : IEquatable<BinaryArtifact>
+public sealed class BinaryArtifact : IEquatable<BinaryArtifact>, IExposableValue<byte[]>
 {
     private readonly byte[] _bytes;
 

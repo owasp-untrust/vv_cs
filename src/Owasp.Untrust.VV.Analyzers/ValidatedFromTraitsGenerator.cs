@@ -12,7 +12,7 @@ namespace Owasp.Untrust.VV.Analyzers;
 [Generator(LanguageNames.CSharp)]
 public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
 {
-    private const string AttributeName =
+    private const string ATTRIBUTE_NAME =
         "Owasp.Untrust.VV.Core.ValidatedFromTraitsAttribute<TTraits>";
 
     private static readonly DiagnosticDescriptor InvalidDeclaration = new(
@@ -98,7 +98,7 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
     }
 
     private static bool IsMarkerAttribute(AttributeData attribute) =>
-        attribute.AttributeClass?.ConstructedFrom.ToDisplayString() == AttributeName;
+        attribute.AttributeClass?.ConstructedFrom.ToDisplayString() == ATTRIBUTE_NAME;
 
     private static bool IsValidationTraitsContract(INamedTypeSymbol candidate) =>
         candidate.Name == "IValidationTraits" &&
@@ -148,7 +148,8 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
             .AppendLine()
             .Append("    static ").Append(self).Append(" global::Owasp.Untrust.VV.Core.IValidatedValueFactory<")
             .Append(self).Append(", ").Append(value).Append(">.CreateValidated(")
-            .Append(value).AppendLine(" validatedValue) => new(validatedValue);");
+            .Append("global::Owasp.Untrust.VV.Core.InternallyValidatedValue<")
+            .Append(value).Append(", ").Append(self).Append("> validated) => new(validated.ValueForReadyConstruction);");
 
         AppendCapabilities(source, traits, traitsName);
         source.AppendLine("}");

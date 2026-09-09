@@ -10,7 +10,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 /// controls except an explicitly permitted tab.
 /// </summary>
 public abstract class Multiline<TSelf, TDisclosure, TTabPolicy>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : Multiline<TSelf, TDisclosure, TTabPolicy>, IBoundedStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
     where TTabPolicy : ITabPolicy

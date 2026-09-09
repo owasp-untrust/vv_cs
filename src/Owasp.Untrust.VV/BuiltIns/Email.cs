@@ -18,8 +18,8 @@ public sealed class Email :
 
     public static string Format => EmailTraits.Format;
 
-    static Email IValidatedValueFactory<Email, string>.CreateValidated(string validatedValue) =>
-        new(validatedValue);
+    static Email IValidatedValueFactory<Email, string>.CreateValidated(
+        InternallyValidatedValue<string, Email> validated) => new(validated.ValueForReadyConstruction);
 }
 
 /// <summary>Reusable local validation for email values and email candidates.</summary>

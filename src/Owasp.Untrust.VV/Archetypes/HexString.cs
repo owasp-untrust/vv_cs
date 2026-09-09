@@ -8,7 +8,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A bounded hexadecimal string without a 0x prefix.</summary>
 public abstract class HexString<TSelf, TDisclosure>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : HexString<TSelf, TDisclosure>, IBoundedStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
 {

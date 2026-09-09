@@ -134,8 +134,6 @@ public sealed class SensitivityLifecycleTests
 
     private readonly struct HexDisclosure : IDisclosurePolicy<BinaryArtifact>
     {
-        public static DisclosureKind Kind => DisclosureKind.Public;
-
         public static object ToPublicValue(BinaryArtifact value) => value.ToHexString();
 
         public static string ToPublicString(BinaryArtifact value) => value.ToHexString();

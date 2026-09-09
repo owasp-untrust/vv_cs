@@ -9,7 +9,10 @@ namespace Owasp.Untrust.VV;
 /// A US Social Security Number in AAA-GG-SSSS form. Invalid area, group, and
 /// serial ranges are rejected and public rendering is redacted.
 /// </summary>
-public sealed class SSN : RegexString<SSN, RedactedPii<string>>, IRegexStringDefinition, IParsable<SSN>
+public sealed class SSN 
+    : RegexString<SSN, RedactedPii<string>>
+    , IRegexStringDefinition
+    , IParsable<SSN>
 {
     private SSN(string raw, IFormatProvider? provider)
         : base(raw, provider)

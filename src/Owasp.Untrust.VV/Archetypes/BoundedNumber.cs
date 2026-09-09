@@ -8,7 +8,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A numeric value parsed from text and constrained to inclusive bounds.</summary>
 public abstract class BoundedNumber<TSelf, TValue, TDisclosure>
-    : ValidatedValue<TSelf, TValue, TDisclosure>
+    : ExposableValidatedValue<TSelf, TValue, TDisclosure>
     where TSelf : BoundedNumber<TSelf, TValue, TDisclosure>, IBoundedNumberDefinition<TValue>
     where TValue : notnull, INumber<TValue>
     where TDisclosure : IDisclosurePolicy<TValue>

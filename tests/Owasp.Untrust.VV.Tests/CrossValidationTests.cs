@@ -137,7 +137,7 @@ public sealed class CrossValidationTests
     }
 
     private sealed class ExistingEmail :
-        CrossValidatedValue<ExistingEmail, string, RedactedPii<string>>,
+        ExposableCrossValidatedValue<ExistingEmail, string, RedactedPii<string>>,
         ICrossValidatedValueFactory<ExistingEmail, string>
     {
         private ExistingEmail(CrossValidationCompletion<string, ExistingEmail> completion)

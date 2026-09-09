@@ -43,13 +43,15 @@ public sealed class PendingHash<TValue> : PendingSensitiveValue<TValue>
 
         cancellationToken.ThrowIfCancellationRequested();
         return new RetainedHashedValue<TValue, TDisclosure>(
-            SourceForExplicitRetention,
+            RawValueForExplicitRetention,
             RequireHash(hash));
     }
 
-    private static BinaryArtifact RequireHash(byte[]? hash)
+    private static BinaryArtifact RequireHash(byte[] hash)
     {
-        if (hash is null || hash.Length == 0)
+        ArgumentNullException.ThrowIfNull(hash);
+
+        if (hash.Length == 0)
         {
             throw new InvalidOperationException("The hash provider returned no hash material.");
         }
@@ -84,24 +86,25 @@ public sealed class HashOnlyValue<TValue, TDisclosure> :
 
 public sealed class RetainedHashedValue<TValue, TDisclosure> :
     IPubliclyRepresentable,
+    IExposableValue<TValue>,
     IRetainsPlaintextValue
     where TValue : notnull
     where TDisclosure : IDisclosurePolicy<BinaryArtifact>
 {
-    private readonly IValidatedValue<TValue> _source;
+    private readonly TValue _plaintext;
     private readonly BinaryArtifact _hash;
 
     internal RetainedHashedValue(
-        IValidatedValue<TValue> source,
+        TValue plaintext,
         BinaryArtifact hash)
     {
-        _source = source ?? throw new ArgumentNullException(nameof(source));
+        _plaintext = plaintext ?? throw new ArgumentNullException(nameof(plaintext));
         _hash = hash ?? throw new ArgumentNullException(nameof(hash));
     }
 
     public BinaryArtifact Hash => _hash;
 
-    public TValue ExposeUnchecked() => _source.ExposeUnchecked();
+    public TValue ExposeUnchecked() => _plaintext;
 
     public object? ToPublicValue() =>
         PublicRepresentation<BinaryArtifact, TDisclosure>.ToPublicValue(_hash);

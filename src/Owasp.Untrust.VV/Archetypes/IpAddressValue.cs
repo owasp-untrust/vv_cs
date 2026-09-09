@@ -8,7 +8,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A parsed IP address constrained by an explicit address policy.</summary>
 public abstract class IpAddressValue<TSelf, TDisclosure, TPolicy>
-    : ValidatedValue<TSelf, IPAddress, TDisclosure>
+    : ExposableValidatedValue<TSelf, IPAddress, TDisclosure>
     where TSelf : IpAddressValue<TSelf, TDisclosure, TPolicy>, IIpAddressDefinition
     where TDisclosure : IDisclosurePolicy<IPAddress>
     where TPolicy : IIpAddressPolicy

@@ -13,6 +13,15 @@ public interface ICrossValidationCandidate : IPubliclyRepresentable
     Type ReceiverType { get; }
 }
 
+/// <summary>Reusable contextual check for a pending cross-validation candidate.</summary>
+public interface ICrossValidation<in TValue>
+    where TValue : notnull
+{
+    ValueTask<CrossValidationResult> ValidateAsync(
+        TValue value,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// Marks a value whose contextual validation has completed. ASP.NET integration
 /// uses this marker to reject direct request deserialization.

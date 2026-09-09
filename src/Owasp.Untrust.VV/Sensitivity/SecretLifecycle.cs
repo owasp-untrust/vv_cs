@@ -31,7 +31,7 @@ public sealed class PendingSecret<TValue> : PendingSensitiveValue<TValue>
     {
         await StoreAsync(store, reference, cancellationToken).ConfigureAwait(false);
         return new RetainedSecretReferenceValue<TValue, TDisclosure>(
-            SourceForExplicitRetention,
+            RawValueForExplicitRetention,
             reference);
     }
 
@@ -76,23 +76,24 @@ public sealed class SecretReferenceOnlyValue<TValue, TDisclosure> :
 
 public sealed class RetainedSecretReferenceValue<TValue, TDisclosure> :
     IPubliclyRepresentable,
+    IExposableValue<TValue>,
     IRetainsPlaintextValue
     where TValue : notnull
     where TDisclosure : IDisclosurePolicy<SecretReference>
 {
-    private readonly IValidatedValue<TValue> _source;
+    private readonly TValue _plaintext;
 
     internal RetainedSecretReferenceValue(
-        IValidatedValue<TValue> source,
+        TValue plaintext,
         SecretReference reference)
     {
-        _source = source ?? throw new ArgumentNullException(nameof(source));
+        _plaintext = plaintext ?? throw new ArgumentNullException(nameof(plaintext));
         Reference = reference ?? throw new ArgumentNullException(nameof(reference));
     }
 
     public SecretReference Reference { get; }
 
-    public TValue ExposeUnchecked() => _source.ExposeUnchecked();
+    public TValue ExposeUnchecked() => _plaintext;
 
     public object? ToPublicValue() =>
         PublicRepresentation<SecretReference, TDisclosure>.ToPublicValue(Reference);

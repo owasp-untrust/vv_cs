@@ -8,7 +8,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A bounded string that must match a fixed regular expression.</summary>
 public abstract class RegexString<TSelf, TDisclosure>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : RegexString<TSelf, TDisclosure>, IRegexStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
 {

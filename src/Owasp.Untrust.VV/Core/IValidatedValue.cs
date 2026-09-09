@@ -21,10 +21,10 @@ internal interface IValidatedValueStorage<out TValue>
 /// <typeparam name="TValue">The protected primitive or framework value.</typeparam>
 public interface IValidatedValue<out TValue> : IValidatedValue
     where TValue : notnull
-{
-    /// <summary>
-    /// Deliberately crosses the validated-value boundary and returns the raw value.
-    /// Prefer passing the wrapper itself until an external API requires the primitive.
-    /// </summary>
-    TValue ExposeUnchecked();
-}
+{ }
+
+/// <summary>A validated value that explicitly permits raw-value exposure.</summary>
+public interface IExposableValidatedValue<out TValue> :
+    IValidatedValue<TValue>,
+    IExposableValue<TValue>
+    where TValue : notnull;

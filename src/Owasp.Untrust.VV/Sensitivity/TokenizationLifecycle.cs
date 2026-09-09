@@ -29,7 +29,7 @@ public sealed class PendingTokenization<TValue> : PendingSensitiveValue<TValue>
     {
         string token = await TokenizeAsync(provider, cancellationToken).ConfigureAwait(false);
         return new RetainedTokenizedValue<TValue, TDisclosure>(
-            SourceForExplicitRetention,
+            RawValueForExplicitRetention,
             token);
     }
 
@@ -78,23 +78,24 @@ public sealed class TokenOnlyValue<TValue, TDisclosure> :
 
 public sealed class RetainedTokenizedValue<TValue, TDisclosure> :
     IPubliclyRepresentable,
+    IExposableValue<TValue>,
     IRetainsPlaintextValue
     where TValue : notnull
     where TDisclosure : IDisclosurePolicy<string>
 {
-    private readonly IValidatedValue<TValue> _source;
+    private readonly TValue _plaintext;
 
     internal RetainedTokenizedValue(
-        IValidatedValue<TValue> source,
+        TValue plaintext,
         string token)
     {
-        _source = source ?? throw new ArgumentNullException(nameof(source));
+        _plaintext = plaintext ?? throw new ArgumentNullException(nameof(plaintext));
         Token = token ?? throw new ArgumentNullException(nameof(token));
     }
 
     public string Token { get; }
 
-    public TValue ExposeUnchecked() => _source.ExposeUnchecked();
+    public TValue ExposeUnchecked() => _plaintext;
 
     public object? ToPublicValue() =>
         PublicRepresentation<string, TDisclosure>.ToPublicValue(Token);

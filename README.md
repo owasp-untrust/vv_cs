@@ -1,6 +1,6 @@
 # OWASP Untrust Validated Values for .NET — v2 design
 
-`vv2_cs` is a secure-by-construction validated-value library for .NET 8. It uses
+`vv_cs` is a secure-by-construction validated-value library for .NET 7 and later. It uses
 the sibling `ValueDescriptors_cs` package for shared public-representation and
 disclosure-policy contracts. A
 validated value is immutable, can only be created through `Parse`/`TryParse`,
@@ -101,9 +101,22 @@ class. The explicit manual form remains available for generated application code
 and tooling. OpenAPI merely observes enforced capabilities and is not part of the
 validation path.
 
-Cross-validation candidates use the same traits directly. They retain the
-locally validated primitive privately and do not wrap another validated-value
-object or expose a raw-value escape hatch.
+Cross-validation candidates use the same traits directly. They retain the locally validated primitive privately and do not wrap another validated-value object or expose a raw-value escape hatch.
+
+### Cross-validation
+
+Use a pending candidate when local validation is insufficient. Parsing validates only the shape; a successful lambda, delegate method, or DI-backed functor transition creates a distinct ready value:
+
+```csharp
+ExistingEmailCandidate candidate = ExistingEmailCandidate.Parse(
+    "alice@example.com", null);
+
+ExistingEmail email = await candidate.CompleteAsync(
+    new ConfirmEmailExists(directory),
+    cancellationToken);
+```
+
+The candidate has no `ExposeUnchecked()` method. It can only become a ready value after the transition succeeds. This is one example of value chaining; see [value_chain_examples.md](value_chain_examples.md) for entity authorization, password hashing, vault storage, encryption, and disclosure token/hash examples.
 
 ## Authorized entity resolution
 
@@ -146,29 +159,9 @@ builder.Services.AddValidatedValues();
 The integration rejects cross-validation candidates on output and rejects
 cross-validated receivers on input.
 
-## Contextual validation and sensitive lifecycles
+## Value chains
 
-- `CrossValidationCandidate` performs local parsing only. A domain-specific
-  async method performs repository, authorization, DNS, or service checks and
-  returns a distinct `CrossValidatedValue` receiver.
-- Hashing, authenticated encryption, tokenization, and secret storage use
-  application-provided async services.
-- Transformed-only values physically retain no plaintext; retained variants
-  declare plaintext retention in their type.
-- Mutable cryptographic byte buffers are copied on input and output.
-
-## Migration from v1
-
-| v1 | v2 |
-|---|---|
-| `Wrap` / `From` | `Parse` |
-| `TryWrap` / `TryFrom` | `TryParse` |
-| `.Value` | `.ExposeUnchecked()` |
-| `CreateNonValidated` | Removed |
-| `init` bounds/patterns | Static definition members |
-
-This is intentionally a breaking design; unsafe compatibility shims are not
-provided.
+Pending values are safe to render but never expose their raw primitive. Typed transitions perform cross-validation, authorization, hashing, encryption, vault storage, or disclosure transformation and mint the next value only on success. The next value can itself be pending, allowing `Pending → HalfBaked → Ready` chains without a separate state-machine API. See [value_chain_examples.md](value_chain_examples.md) for the target API examples.
 
 ## Projects
 

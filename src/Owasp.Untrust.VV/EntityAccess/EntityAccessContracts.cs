@@ -4,7 +4,7 @@ using Owasp.Untrust.ValueDescriptors;
 
 namespace Owasp.Untrust.VV.EntityAccess;
 
-public interface IEntityOperation;
+public interface IEntityOperation : IAuthorizationScope;
 
 public readonly record struct ScopedSubjectId<TId, TScope>(TId Id, TScope Scope)
     where TId : notnull

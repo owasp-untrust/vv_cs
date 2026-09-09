@@ -7,12 +7,12 @@ namespace Owasp.Untrust.VV.Core;
 public interface IValidatedValueFactory<TSelf, TValue>
     where TValue : notnull
 {
-    static abstract TSelf CreateValidated(TValue validatedValue);
+    static abstract TSelf CreateValidated(InternallyValidatedValue<TValue, TSelf> validated);
 }
 
 /// <summary>A validated value whose complete local pipeline is supplied by reusable traits.</summary>
 public abstract class ValidatedFromTraits<TSelf, TValue, TTraits, TArchetype, TDisclosure>
-    : ValidatedValue<TSelf, TValue, TDisclosure>, IParsable<TSelf>
+    : ExposableValidatedValue<TSelf, TValue, TDisclosure>, IParsable<TSelf>
     where TSelf : ValidatedFromTraits<TSelf, TValue, TTraits, TArchetype, TDisclosure>,
         IValidatedValueFactory<TSelf, TValue>
     where TValue : notnull
@@ -28,7 +28,7 @@ public abstract class ValidatedFromTraits<TSelf, TValue, TTraits, TArchetype, TD
     public static TSelf Parse(string raw, IFormatProvider? provider)
     {
         TValue validated = ValidationTraitsPipeline.Run<TValue, TTraits, TArchetype, TDisclosure>(raw, provider);
-        return TSelf.CreateValidated(validated);
+        return TSelf.CreateValidated(new InternallyValidatedValue<TValue, TSelf>(validated));
     }
 
     public static bool TryParse(
@@ -41,7 +41,7 @@ public abstract class ValidatedFromTraits<TSelf, TValue, TTraits, TArchetype, TD
                 provider,
                 out TValue? validated))
         {
-            result = TSelf.CreateValidated(validated);
+            result = TSelf.CreateValidated(new InternallyValidatedValue<TValue, TSelf>(validated));
             return true;
         }
 

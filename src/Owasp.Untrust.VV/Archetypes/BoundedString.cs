@@ -7,7 +7,7 @@ namespace Owasp.Untrust.VV.Archetypes;
 
 /// <summary>A string with mandatory raw and normalized length bounds.</summary>
 public abstract class BoundedString<TSelf, TDisclosure>
-    : ValidatedValue<TSelf, string, TDisclosure>
+    : ExposableValidatedValue<TSelf, string, TDisclosure>
     where TSelf : BoundedString<TSelf, TDisclosure>, IBoundedStringDefinition
     where TDisclosure : IDisclosurePolicy<string>
 {

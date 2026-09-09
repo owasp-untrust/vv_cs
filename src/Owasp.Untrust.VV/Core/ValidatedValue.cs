@@ -1,6 +1,7 @@
 #pragma warning disable CS1591
 
 using System.Diagnostics.CodeAnalysis;
+using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 
 namespace Owasp.Untrust.VV.Core;
@@ -25,7 +26,8 @@ public abstract class ValidatedValue<TSelf, TValue, TDisclosure>
 
     public Type ValueType => typeof(TValue);
 
-    public TValue ExposeUnchecked() => _value;
+    /// <summary>Available only to explicit exposure-capable derived bases.</summary>
+    protected TValue GetValidatedValueForDerivedUse() => _value;
 
     TValue IValidatedValueStorage<TValue>.GetRawValueForInternalUse() => _value;
 
@@ -61,4 +63,23 @@ public abstract class ValidatedValue<TSelf, TValue, TDisclosure>
             return false;
         }
     }
+}
+
+/// <summary>
+/// A locally validated value that deliberately permits callers to obtain its raw
+/// representation. Derive from <see cref="ValidatedValue{TSelf, TValue, TDisclosure}"/>
+/// directly when validation must not imply public raw-value exposure.
+/// </summary>
+public abstract class ExposableValidatedValue<TSelf, TValue, TDisclosure>
+    : ValidatedValue<TSelf, TValue, TDisclosure>, IExposableValidatedValue<TValue>
+    where TSelf : ExposableValidatedValue<TSelf, TValue, TDisclosure>
+    where TValue : notnull
+    where TDisclosure : IDisclosurePolicy<TValue>
+{
+    private protected ExposableValidatedValue(TValue validatedValue)
+        : base(validatedValue)
+    {
+    }
+
+    public TValue ExposeUnchecked() => GetValidatedValueForDerivedUse();
 }

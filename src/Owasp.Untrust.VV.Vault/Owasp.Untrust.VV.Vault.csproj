@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Owasp.Untrust.VV.Vault</PackageId>
+    <Description>Provider-neutral vault-backed values for OWASP Untrust VV.</Description>
+    <PackageTags>owasp;security;validation;validated-values;vault;secrets</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

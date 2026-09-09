@@ -7,6 +7,8 @@
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" PrivateAssets="all" />
     <ProjectReference Include="../../src/Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />
+    <ProjectReference Include="../../src/Owasp.Untrust.VV.Vault/Owasp.Untrust.VV.Vault.csproj" />
+    <ProjectReference Include="../../src/Owasp.Untrust.VV.EntityAccess/Owasp.Untrust.VV.EntityAccess.csproj" />
     <ProjectReference Include="../../src/Owasp.Untrust.VV.AspNetCore/Owasp.Untrust.VV.AspNetCore.csproj" />
     <ProjectReference Include="../../src/Owasp.Untrust.VV.Analyzers/Owasp.Untrust.VV.Analyzers.csproj"
                       OutputItemType="Analyzer"

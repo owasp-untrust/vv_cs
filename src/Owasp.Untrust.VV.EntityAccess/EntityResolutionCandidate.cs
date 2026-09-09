@@ -89,7 +89,7 @@ public abstract class EntityResolutionCandidate<
 
     public static TCandidate Parse(string text, IFormatProvider? provider)
     {
-        TId validated = ValidationTraitsPipeline.Run<TId, TTraits, TArchetype, TDisclosure>(text, provider);
+        TId validated = LocalValidation.ParseAndValidate<TId, TTraits, TArchetype, TDisclosure>(text, provider);
         return TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
     }
 
@@ -98,13 +98,17 @@ public abstract class EntityResolutionCandidate<
         IFormatProvider? provider,
         [NotNullWhen(true)] out TCandidate? result)
     {
-        if (ValidationTraitsPipeline.TryRun<TId, TTraits, TArchetype, TDisclosure>(
-                text,
-                provider,
-                out TId? validated))
+        if (text is not null)
         {
-            result = TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
-            return true;
+            try
+            {
+                TId validated = LocalValidation.ParseAndValidate<TId, TTraits, TArchetype, TDisclosure>(text, provider);
+                result = TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
+                return true;
+            }
+            catch (ValidationException)
+            {
+            }
         }
 
         result = null;

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Owasp.Untrust.VV.EntityAccess</PackageId>
+    <Description>Entity resolution and authorization capabilities for OWASP Untrust VV.</Description>
+    <PackageTags>owasp;security;validation;validated-values;authorization;entity-access</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />
+    <ProjectReference Include="../../../ValueDescriptors_cs/src/Owasp.Untrust.ValueDescriptors/Owasp.Untrust.ValueDescriptors.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

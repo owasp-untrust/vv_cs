@@ -4,6 +4,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV", "src\Owasp.Untrust.VV\Owasp.Untrust.VV.csproj", "{1735C17A-F467-42DC-BF7B-8080843B5B9D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.Vault", "src\Owasp.Untrust.VV.Vault\Owasp.Untrust.VV.Vault.csproj", "{6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.EntityAccess", "src\Owasp.Untrust.VV.EntityAccess\Owasp.Untrust.VV.EntityAccess.csproj", "{BA046C4D-6F72-4B94-A847-409A1082D1BE}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.AspNetCore", "src\Owasp.Untrust.VV.AspNetCore\Owasp.Untrust.VV.AspNetCore.csproj", "{27779D94-9E2F-4F66-8DA6-FBBDDA642923}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.Analyzers", "src\Owasp.Untrust.VV.Analyzers\Owasp.Untrust.VV.Analyzers.csproj", "{37C21F8D-C2B7-4436-B4CD-688AF1D34C61}"
@@ -20,6 +24,14 @@ Global
     {1735C17A-F467-42DC-BF7B-8080843B5B9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {1735C17A-F467-42DC-BF7B-8080843B5B9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
     {1735C17A-F467-42DC-BF7B-8080843B5B9D}.Release|Any CPU.Build.0 = Release|Any CPU
+    {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Release|Any CPU.Build.0 = Release|Any CPU
+    {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Release|Any CPU.Build.0 = Release|Any CPU
     {27779D94-9E2F-4F66-8DA6-FBBDDA642923}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
     {27779D94-9E2F-4F66-8DA6-FBBDDA642923}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {27779D94-9E2F-4F66-8DA6-FBBDDA642923}.Release|Any CPU.ActiveCfg = Release|Any CPU

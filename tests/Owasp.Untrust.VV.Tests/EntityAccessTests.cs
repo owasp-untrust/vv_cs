@@ -265,8 +265,9 @@ public sealed class EntityAccessTests
         private DocumentIdCandidate(string id) : base(id) { }
 
         static DocumentIdCandidate
-            IEntityResolutionCandidateFactory<DocumentIdCandidate, string>.CreateValidated(string id) =>
-            new(id);
+            IEntityResolutionCandidateFactory<DocumentIdCandidate, string>.CreateValidated(
+                InternallyValidatedValue<string, DocumentIdCandidate> validated) =>
+            new(validated.ValueForReadyConstruction);
 
         public ValueTask<AuthorizedEntity<Document, ReadDocument>> ResolveReadAsync(
             IEntityRepository<string, Document> repository,

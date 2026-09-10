@@ -30,7 +30,7 @@ The required shape is:
 primitive → pending value → encrypted value
 ```
 
-There must be no exposable plaintext value in the second path. The pending type is therefore what route binding, body binding, message deserialization, and other input adapters construct directly. `PendingFromTraits` supplies this shape for locally validated textual input because it implements `IParsable<TSelf>`.
+There must be no exposable plaintext value in the second path. The pending type is therefore what route binding, body binding, message deserialization, and other input adapters construct directly. `PendingValue` supplies this shape for locally validated textual input because it implements `IParsable<TSelf>`.
 
 ## Completion examples
 

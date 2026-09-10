@@ -11,20 +11,7 @@ public interface IValidatedValue : IPubliclyRepresentable
     Type ValueType { get; }
 }
 
-internal interface IValidatedValueStorage<out TValue>
-    where TValue : notnull
-{
-    TValue GetRawValueForInternalUse();
-}
-
 /// <summary>A value whose raw representation passed its complete local pipeline.</summary>
 /// <typeparam name="TValue">The protected primitive or framework value.</typeparam>
 public interface IValidatedValue<out TValue> : IValidatedValue
-    where TValue : notnull
-{ }
-
-/// <summary>A validated value that explicitly permits raw-value exposure.</summary>
-public interface IExposableValidatedValue<out TValue> :
-    IValidatedValue<TValue>,
-    IExposableValue<TValue>
     where TValue : notnull;

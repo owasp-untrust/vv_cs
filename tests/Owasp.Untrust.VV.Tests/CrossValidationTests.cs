@@ -118,7 +118,8 @@ public sealed class CrossValidationTests
 
         static ExistingEmailCandidate
             ICrossValidationCandidateFactory<ExistingEmailCandidate, string>.CreateValidated(
-                string locallyValidatedValue) => new(locallyValidatedValue);
+                InternallyValidatedValue<string, ExistingEmailCandidate> validated) =>
+            new(validated.ValueForReadyConstruction);
 
         public ValueTask<ExistingEmail> ConfirmExistsAsync(
             IEmailDirectory directory,

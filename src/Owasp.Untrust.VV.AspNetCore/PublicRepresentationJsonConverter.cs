@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Core;
+using Owasp.Untrust.ValueDescriptors.Disclosure;
 
 namespace Owasp.Untrust.VV.AspNetCore;
 
@@ -29,26 +30,40 @@ internal class PublicRepresentationJsonConverter<T> : JsonConverter<T>
             return;
         }
 
-        if (ValidatedValueTypeInspector.IsCandidate(value.GetType()))
-        {
-            throw new JsonException(
-                $"Incomplete candidate '{value.GetType().Name}' cannot be serialized.");
-        }
+        string reason = ValidatedValueTypeInspector.IsCandidate(value.GetType()) ||
+            ValidatedValueTypeInspector.IsPending(value.GetType())
+            ? "Incomplete values cannot be serialized."
+            : "The disclosure policy does not permit automatic JSON output. Register an explicit type-specific JsonConverter.";
+        throw new JsonException($"'{value.GetType().Name}' cannot be serialized. {reason}");
+    }
+}
 
-        var publicValue = value.ToPublicValue();
-        if (ReferenceEquals(publicValue, value))
-        {
-            throw new JsonException(
-                $"'{value.GetType().Name}' returned itself as its public representation.");
-        }
-
-        if (publicValue is null)
+internal class PublicValidatedValueJsonConverter<T, TValue, TDisclosure>
+    : PublicRepresentationJsonConverter<T>
+    where T : IPubliclyRepresentable
+    where TValue : notnull
+    where TDisclosure : IPublicDisclosurePolicy<TValue>
+{
+    public override void Write(
+        Utf8JsonWriter writer,
+        T value,
+        JsonSerializerOptions options)
+    {
+        if (value is null)
         {
             writer.WriteNullValue();
             return;
         }
 
-        JsonSerializer.Serialize(writer, publicValue, publicValue.GetType(), options);
+        if (value is not IValidatedValueStorage<TValue> storage)
+        {
+            throw new JsonException(
+                $"'{typeof(T).Name}' does not expose completed validated-value storage to the framework.");
+        }
+
+        TValue publicValue = TDisclosure.PublicValue(
+            storage.GetRawValueForInternalUse());
+        JsonSerializer.Serialize(writer, publicValue, options);
     }
 }
 
@@ -59,7 +74,10 @@ internal sealed class ParsableValidatedValueJsonConverter<T>
     public override T Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
-        JsonSerializerOptions options)
+        JsonSerializerOptions options) =>
+        ReadValidated(ref reader);
+
+    internal static T ReadValidated(ref Utf8JsonReader reader)
     {
         if (ValidatedValueTypeInspector.IsReceiver(typeof(T)))
         {
@@ -96,4 +114,17 @@ internal sealed class ParsableValidatedValueJsonConverter<T>
         using var document = JsonDocument.ParseValue(ref reader);
         return document.RootElement.GetRawText();
     }
+}
+
+internal sealed class ParsablePublicValidatedValueJsonConverter<T, TValue, TDisclosure>
+    : PublicValidatedValueJsonConverter<T, TValue, TDisclosure>
+    where T : IPubliclyRepresentable, IParsable<T>
+    where TValue : notnull
+    where TDisclosure : IPublicDisclosurePolicy<TValue>
+{
+    public override T Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options) =>
+        ParsableValidatedValueJsonConverter<T>.ReadValidated(ref reader);
 }

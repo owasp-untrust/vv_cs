@@ -75,9 +75,6 @@ public sealed class HashOnlyValue<TValue, TDisclosure> :
 
     public BinaryArtifact Hash => _hash;
 
-    public object? ToPublicValue() =>
-        PublicRepresentation<BinaryArtifact, TDisclosure>.ToPublicValue(_hash);
-
     public string ToPublicString() =>
         PublicRepresentation<BinaryArtifact, TDisclosure>.ToPublicString(_hash);
 
@@ -105,9 +102,6 @@ public sealed class RetainedHashedValue<TValue, TDisclosure> :
     public BinaryArtifact Hash => _hash;
 
     public TValue ExposeUnchecked() => _plaintext;
-
-    public object? ToPublicValue() =>
-        PublicRepresentation<BinaryArtifact, TDisclosure>.ToPublicValue(_hash);
 
     public string ToPublicString() =>
         PublicRepresentation<BinaryArtifact, TDisclosure>.ToPublicString(_hash);

@@ -65,9 +65,6 @@ public sealed class SecretReferenceOnlyValue<TValue, TDisclosure> :
 
     public SecretReference Reference { get; }
 
-    public object? ToPublicValue() =>
-        PublicRepresentation<SecretReference, TDisclosure>.ToPublicValue(Reference);
-
     public string ToPublicString() =>
         PublicRepresentation<SecretReference, TDisclosure>.ToPublicString(Reference);
 
@@ -94,9 +91,6 @@ public sealed class RetainedSecretReferenceValue<TValue, TDisclosure> :
     public SecretReference Reference { get; }
 
     public TValue ExposeUnchecked() => _plaintext;
-
-    public object? ToPublicValue() =>
-        PublicRepresentation<SecretReference, TDisclosure>.ToPublicValue(Reference);
 
     public string ToPublicString() =>
         PublicRepresentation<SecretReference, TDisclosure>.ToPublicString(Reference);

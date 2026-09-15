@@ -66,10 +66,6 @@ public sealed class EncryptedOnlyValue<TValue, TDisclosure> :
 
     public AuthenticatedEncryptionEnvelope Envelope => _envelope;
 
-    public object? ToPublicValue() =>
-        PublicRepresentation<AuthenticatedEncryptionEnvelope, TDisclosure>
-            .ToPublicValue(_envelope);
-
     public string ToPublicString() =>
         PublicRepresentation<AuthenticatedEncryptionEnvelope, TDisclosure>
             .ToPublicString(_envelope);
@@ -98,10 +94,6 @@ public sealed class RetainedEncryptedValue<TValue, TDisclosure> :
     public AuthenticatedEncryptionEnvelope Envelope => _envelope;
 
     public TValue ExposeUnchecked() => _plaintext;
-
-    public object? ToPublicValue() =>
-        PublicRepresentation<AuthenticatedEncryptionEnvelope, TDisclosure>
-            .ToPublicValue(_envelope);
 
     public string ToPublicString() =>
         PublicRepresentation<AuthenticatedEncryptionEnvelope, TDisclosure>

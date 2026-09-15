@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Owasp.Untrust.VV.Core;
 
 namespace Owasp.Untrust.VV.AspNetCore;
 
@@ -33,9 +34,34 @@ internal sealed class ValidatedValueJsonConverterFactory : JsonConverterFactory
                 $"Type '{typeToConvert}' is not a publicly representable validated value.");
         }
 
-        var converterType = ValidatedValueTypeInspector.IsSelfParsable(typeToConvert)
-            ? typeof(ParsableValidatedValueJsonConverter<>).MakeGenericType(typeToConvert)
-            : typeof(PublicRepresentationJsonConverter<>).MakeGenericType(typeToConvert);
+        bool parsable = ValidatedValueTypeInspector.IsSelfParsable(typeToConvert);
+        bool completed = typeof(IValidatedValue).IsAssignableFrom(typeToConvert) &&
+            !ValidatedValueTypeInspector.IsPending(typeToConvert) &&
+            !ValidatedValueTypeInspector.IsCandidate(typeToConvert);
+        bool publicDisclosure = completed &&
+            ValidatedValueTypeInspector.TryGetPublicDisclosure(
+                typeToConvert,
+                out Type? valueType,
+                out Type? disclosureType);
+
+        Type converterType;
+        if (publicDisclosure)
+        {
+            Type genericConverter = parsable
+                ? typeof(ParsablePublicValidatedValueJsonConverter<,,>)
+                : typeof(PublicValidatedValueJsonConverter<,,>);
+            converterType = genericConverter.MakeGenericType(
+                typeToConvert,
+                valueType!,
+                disclosureType!);
+        }
+        else
+        {
+            converterType = (parsable
+                    ? typeof(ParsableValidatedValueJsonConverter<>)
+                    : typeof(PublicRepresentationJsonConverter<>))
+                .MakeGenericType(typeToConvert);
+        }
 
         return (JsonConverter)Activator.CreateInstance(converterType)!;
     }

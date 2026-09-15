@@ -23,8 +23,6 @@ public abstract class PendingValue<TSelf, TValue, TReady, TOutput, TTraits, TArc
         _value = validatedValue ?? throw new ArgumentNullException(nameof(validatedValue));
     }
 
-    public object? ToPublicValue() => TDisclosure.ToPublicValue(_value);
-
     public string ToPublicString() => TDisclosure.ToPublicString(_value);
 
     public sealed override string ToString() => ToPublicString();

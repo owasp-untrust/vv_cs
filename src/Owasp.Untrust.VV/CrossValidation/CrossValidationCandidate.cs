@@ -35,9 +35,6 @@ public abstract class CrossValidationCandidate<
 
     public Type ReceiverType => typeof(TReceiver);
 
-    public object? ToPublicValue() =>
-        TDisclosure.ToPublicValue(_locallyValidated);
-
     public string ToPublicString() =>
         TDisclosure.ToPublicString(_locallyValidated);
 

@@ -47,8 +47,6 @@ public readonly struct MaskedApiKey : IDisclosurePolicy<string>
 {
     private const int DISPLAY_SUFFIX_LENGTH = 4;
 
-    public static object ToPublicValue(string value) => ToPublicString(value);
-
     public static string ToPublicString(string value) => "****" + value[^DISPLAY_SUFFIX_LENGTH..];
 }
 

@@ -9,9 +9,6 @@ internal static class PublicRepresentation<TValue, TDisclosure>
     where TValue : notnull
     where TDisclosure : IDisclosurePolicy<TValue>
 {
-    internal static object? ToPublicValue(TValue value) =>
-        TDisclosure.ToPublicValue(value);
-
     internal static string ToPublicString(TValue value) =>
         TDisclosure.ToPublicString(value);
 }
@@ -39,8 +36,6 @@ public abstract class PendingSensitiveValue<TValue> : IPubliclyRepresentable
         _sourceStorage.GetRawValueForInternalUse();
 
     protected TValue RawValueForExplicitRetention => ExposeForTransformation();
-
-    public object ToPublicValue() => ToPublicString();
 
     public string ToPublicString() => "[pending sensitive transformation]";
 

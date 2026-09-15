@@ -1,6 +1,7 @@
 using System.Reflection;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Core;
+using Owasp.Untrust.ValueDescriptors.Disclosure;
 
 namespace Owasp.Untrust.VV.AspNetCore;
 
@@ -13,6 +14,9 @@ internal static class ValidatedValueTypeInspector
 
     internal static bool IsPubliclyRepresentable(Type type) =>
         typeof(IPubliclyRepresentable).IsAssignableFrom(type);
+
+    internal static bool IsPending(Type type) =>
+        typeof(IPendingValue).IsAssignableFrom(type);
 
     internal static bool IsCandidate(Type type) =>
         ImplementsMarker(type, CANDIDATE_MARKER_NAME) ||
@@ -72,6 +76,32 @@ internal static class ValidatedValueTypeInspector
             ? 2
             : 1;
         return securedBase.GenericTypeArguments.ElementAtOrDefault(argumentIndex);
+    }
+
+    internal static bool TryGetPublicDisclosure(
+        Type type,
+        out Type? valueType,
+        out Type? disclosureType)
+    {
+        Type? securedBase = FindValidatedValueBase(type);
+        if (securedBase is null || securedBase.GenericTypeArguments.Length < 3)
+        {
+            valueType = null;
+            disclosureType = null;
+            return false;
+        }
+
+        valueType = securedBase.GenericTypeArguments[1];
+        disclosureType = securedBase.GenericTypeArguments[2];
+        Type publicPolicy = typeof(IPublicDisclosurePolicy<>).MakeGenericType(valueType);
+        if (publicPolicy.IsAssignableFrom(disclosureType))
+        {
+            return true;
+        }
+
+        valueType = null;
+        disclosureType = null;
+        return false;
     }
 
     internal static bool TryGetStaticProperty(Type type, string simpleName, out object? value)

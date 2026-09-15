@@ -67,9 +67,6 @@ public sealed class TokenOnlyValue<TValue, TDisclosure> :
 
     public string Token { get; }
 
-    public object? ToPublicValue() =>
-        PublicRepresentation<string, TDisclosure>.ToPublicValue(Token);
-
     public string ToPublicString() =>
         PublicRepresentation<string, TDisclosure>.ToPublicString(Token);
 
@@ -96,9 +93,6 @@ public sealed class RetainedTokenizedValue<TValue, TDisclosure> :
     public string Token { get; }
 
     public TValue ExposeUnchecked() => _plaintext;
-
-    public object? ToPublicValue() =>
-        PublicRepresentation<string, TDisclosure>.ToPublicValue(Token);
 
     public string ToPublicString() =>
         PublicRepresentation<string, TDisclosure>.ToPublicString(Token);

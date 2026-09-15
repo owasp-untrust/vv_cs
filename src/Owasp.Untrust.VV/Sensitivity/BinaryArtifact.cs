@@ -28,6 +28,8 @@ public sealed class BinaryArtifact : IEquatable<BinaryArtifact>, IExposableValue
 
     public string ToHexString() => Convert.ToHexString(_bytes);
 
+    public string ToPublicString() => "[binary artifact]";
+
     public bool Equals(BinaryArtifact? other) =>
         other is not null && _bytes.AsSpan().SequenceEqual(other._bytes);
 
@@ -45,5 +47,5 @@ public sealed class BinaryArtifact : IEquatable<BinaryArtifact>, IExposableValue
         return hash.ToHashCode();
     }
 
-    public override string ToString() => "[binary artifact]";
+    public override string ToString() => ToPublicString();
 }

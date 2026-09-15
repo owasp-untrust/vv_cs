@@ -45,8 +45,6 @@ public abstract class EntityResolutionCandidate<
 
     public Type EntityIdType => typeof(TId);
 
-    public object? ToPublicValue() => TDisclosure.ToPublicValue(_locallyValidatedId);
-
     public string ToPublicString() => TDisclosure.ToPublicString(_locallyValidatedId);
 
     public sealed override string ToString() => ToPublicString();

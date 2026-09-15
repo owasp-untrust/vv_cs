@@ -24,8 +24,6 @@ public abstract class VaultStoredValue<TSelf, TValue> : IAsyncExposableValue<TVa
 
     public SecretReference Reference => _reference;
 
-    object? IPubliclyRepresentable.ToPublicValue() => ToPublicString();
-
     public string ToPublicString() => _publicRepresentation;
 
     public sealed override string ToString() => ToPublicString();

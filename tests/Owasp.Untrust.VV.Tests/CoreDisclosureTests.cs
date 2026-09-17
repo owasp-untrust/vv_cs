@@ -19,7 +19,7 @@ public sealed class CoreDisclosureTests
         var card = CreditCard.Parse("4111111111111111", null);
 
         Assert.Equal("[sensitive]", email.ToString());
-        Assert.Equal("[sensitive]", phone.ToPublicValue());
+        Assert.Equal("[sensitive]", phone.ToPublicString());
         Assert.Equal("[sensitive]", ssn.ToPublicString());
         Assert.Equal("************1111", card.ToString());
         Assert.Equal("alice@example.test", email.ExposeUnchecked());
@@ -32,9 +32,9 @@ public sealed class CoreDisclosureTests
         var value = PublicCode.Parse("safe", null);
         IValidatedValue erased = value;
 
-        Assert.Equal("safe", erased.ToPublicValue());
         Assert.Equal("safe", erased.ToPublicString());
         Assert.Equal(typeof(string), erased.ValueType);
+        Assert.Null(typeof(IValidatedValue).GetMethod("ToPublicValue"));
     }
 
     [Fact]

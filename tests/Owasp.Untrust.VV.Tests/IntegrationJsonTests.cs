@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -35,17 +36,32 @@ public sealed class IntegrationJsonTests
         Assert.DoesNotContain("this rejected value", exception.Message);
     }
 
-    /// <summary>Sensitive output uses the classified public representation.</summary>
+    /// <summary>Only a public disclosure policy enables automatic JSON output.</summary>
     [Fact]
-    public void Serialization_UsesTheSafeDisclosureRepresentation()
+    public void Serialization_RequiresPublicDisclosurePolicy()
     {
         var options = CreateJsonOptions();
+        var publicValue = IntegrationPublicText.Parse("visible", provider: null);
+        var publicNumber = IntegrationPublicPortPoc.Parse("443", provider: null);
         var secret = IntegrationSecretText.Parse("private", provider: null);
 
-        var json = JsonSerializer.Serialize(secret, options);
+        Assert.Equal("\"visible\"", JsonSerializer.Serialize(publicValue, options));
+        Assert.Equal("443", JsonSerializer.Serialize(publicNumber, options));
+        JsonException exception = Assert.Throws<JsonException>(() =>
+            JsonSerializer.Serialize(secret, options));
+        Assert.DoesNotContain("private", exception.Message);
+        Assert.Contains("explicit type-specific JsonConverter", exception.Message);
+    }
 
-        Assert.Equal("\"[sensitive]\"", json);
-        Assert.DoesNotContain("private", json);
+    /// <summary>An application can explicitly choose a non-public type's JSON representation.</summary>
+    [Fact]
+    public void TypeSpecificConverter_CanOptNonPublicTypeIntoSerialization()
+    {
+        var options = CreateJsonOptions();
+        options.Converters.Insert(0, new IntegrationSecretTextJsonConverter());
+        var secret = IntegrationSecretText.Parse("private", provider: null);
+
+        Assert.Equal("\"[sensitive]\"", JsonSerializer.Serialize(secret, options));
     }
 
     /// <summary>Optional values preserve Some/None semantics in JSON.</summary>
@@ -70,8 +86,10 @@ public sealed class IntegrationJsonTests
     {
         var options = CreateJsonOptions();
         var candidate = IntegrationCandidate.Parse("locally-valid", provider: null);
+        var pending = IntegrationPending.Parse("locally-valid", provider: null);
 
         Assert.Throws<JsonException>(() => JsonSerializer.Serialize(candidate, options));
+        Assert.Throws<JsonException>(() => JsonSerializer.Serialize(pending, options));
         Assert.Throws<JsonException>(() =>
             JsonSerializer.Deserialize<IntegrationReceiver>("\"trusted\"", options));
     }
@@ -163,6 +181,33 @@ public sealed class IntegrationJsonTests
         }
     }
 
+    private sealed class IntegrationPublicPortPoc :
+        BoundedNumber<IntegrationPublicPortPoc, int, Public<int>>,
+        IBoundedNumberDefinition<int>,
+        IParsable<IntegrationPublicPortPoc>
+    {
+        private IntegrationPublicPortPoc(string raw, IFormatProvider? provider)
+            : base(raw, provider)
+        {
+        }
+
+        public static Bounds<int> Bounds => new(1, 65535);
+
+        public static IntegrationPublicPortPoc Parse(string raw, IFormatProvider? provider) =>
+            new(raw, provider);
+
+        public static bool TryParse(
+            string? raw,
+            IFormatProvider? provider,
+            [MaybeNullWhen(false)] out IntegrationPublicPortPoc result) =>
+            TryParseCore(
+                raw,
+                provider,
+                static (value, formatProvider) =>
+                    new IntegrationPublicPortPoc(value, formatProvider),
+                out result);
+    }
+
     private sealed class IntegrationCandidate :
         ICrossValidationCandidate,
         IParsable<IntegrationCandidate>
@@ -175,8 +220,6 @@ public sealed class IntegrationJsonTests
         }
 
         public Type ReceiverType => typeof(IntegrationReceiver);
-
-        public object ToPublicValue() => _value;
 
         public string ToPublicString() => _value;
 
@@ -208,9 +251,36 @@ public sealed class IntegrationJsonTests
     {
         public Type ValueType => typeof(string);
 
-        public object ToPublicValue() => "trusted";
-
         public string ToPublicString() => "trusted";
+    }
+
+    private sealed class IntegrationPending : IPendingValue, IParsable<IntegrationPending>
+    {
+        private readonly string _value;
+
+        private IntegrationPending(string value) => _value = value;
+
+        public string ToPublicString() => _value;
+
+        public static IntegrationPending Parse(string raw, IFormatProvider? provider) =>
+            !string.IsNullOrWhiteSpace(raw)
+                ? new IntegrationPending(raw)
+                : throw new ArgumentException("Value cannot be null or whitespace.", nameof(raw));
+
+        public static bool TryParse(
+            string? raw,
+            IFormatProvider? provider,
+            [MaybeNullWhen(false)] out IntegrationPending result)
+        {
+            if (!string.IsNullOrWhiteSpace(raw))
+            {
+                result = new IntegrationPending(raw);
+                return true;
+            }
+
+            result = null!;
+            return false;
+        }
     }
 
     private sealed class IntegrationRead : IEntityOperation;
@@ -227,8 +297,6 @@ public sealed class IntegrationJsonTests
         }
 
         public Type EntityIdType => typeof(string);
-
-        public object ToPublicValue() => _id;
 
         public string ToPublicString() => _id;
 
@@ -254,5 +322,20 @@ public sealed class IntegrationJsonTests
             result = null!;
             return false;
         }
+    }
+
+    private sealed class IntegrationSecretTextJsonConverter : JsonConverter<IntegrationSecretText>
+    {
+        public override IntegrationSecretText Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options) =>
+            IntegrationSecretText.Parse(reader.GetString()!, provider: null);
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            IntegrationSecretText value,
+            JsonSerializerOptions options) =>
+            writer.WriteStringValue(value.ToPublicString());
     }
 }

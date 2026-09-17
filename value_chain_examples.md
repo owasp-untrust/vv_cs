@@ -241,7 +241,7 @@ string safeForLogs = email.ToPublicString(); // token
 
 Tokenization here is a disclosure transition, not storage. `TokenizedEmail` retains the operational email for delivery, while its disclosure policy renders the provider-issued token.
 
-The tokenizer callback returns `ValueTask<DisclosureToken>`. The framework's disclosure-transformation evidence contains both the retained operational email and the token; the ready factory can use the first for explicit operational exposure and the second only for `ToPublicValue()` and `ToPublicString()`.
+The tokenizer callback returns `ValueTask<DisclosureToken>`. The framework's disclosure-transformation evidence contains both the retained operational email and the token; the ready factory can use the first for explicit operational exposure and the second for `ToPublicString()`. JSON serialization is not inferred from this textual disclosure choice; register a type-specific converter when the token is deliberately the wire representation.
 
 ## Hashed disclosure
 

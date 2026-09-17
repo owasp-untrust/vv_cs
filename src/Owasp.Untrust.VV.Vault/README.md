@@ -13,6 +13,6 @@ VaultStoredApiKey stored = await pendingApiKey.StoreInVaultAsync(
 string apiKey = await stored.ExposeUncheckedAsync(cancellationToken);
 ```
 
-`VaultStoredApiKey.ToString()` and `ToPublicString()` return the masked form, never the API key. `IPubliclyRepresentable.ToPublicValue()` is implemented explicitly and returns the same safe string for integrations such as JSON converters; it is not a usable secret value and is never used for vault storage.
+`VaultStoredApiKey.ToString()` and `ToPublicString()` return the masked form, never the API key. The type does not opt into automatic JSON output; an application must register a type-specific converter and explicitly choose its wire representation.
 
 For HashiCorp Vault, implement `ISecretStore<TValue>` in a separate integration package. HashiCorp documents VaultSharp as the C# community client; its generated .NET client is experimental, so this module deliberately does not take a direct HashiCorp dependency. Azure Key Vault likewise has its own official Azure `SecretClient` and belongs in a separate adapter.

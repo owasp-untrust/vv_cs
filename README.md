@@ -35,9 +35,9 @@ public sealed class ProjectSlug
 ```
 
 Use `RedactedPii<T>`, `MaskedPii<T,TMasker>`, or `RedactedSecret<T>` instead of
-`Public<T>` when the value must not be rendered directly. `ToString()`, logging,
-and the ASP.NET JSON converter use the selected safe representation. Raw access
-is deliberately conspicuous:
+`Public<T>` when the value must not be rendered directly. `ToString()` and
+logging use the selected safe textual representation. Raw access is deliberately
+conspicuous:
 
 ```csharp
 string primitive = slug.ExposeUnchecked();
@@ -149,15 +149,21 @@ Candidates and authorization evidence cannot cross JSON boundaries.
 ## ASP.NET Core
 
 Scalar route, query, header, and form binding uses `IParsable<T>` directly.
-Register body JSON, `Optional<T>`, safe response serialization, and OpenAPI
+Register body JSON, `Optional<T>`, fail-closed response serialization, and OpenAPI
 metadata once:
 
 ```csharp
 builder.Services.AddValidatedValues();
 ```
 
-The integration rejects cross-validation candidates on output and rejects
-cross-validated receivers on input.
+Automatic JSON output is enabled only for completed values whose disclosure is
+`Public<T>` (or another deliberate `IPublicDisclosurePolicy<T>`). Redacted,
+masked, tokenized, and other non-public disclosures throw on serialization because
+the library cannot decide whether an API should emit the retained value or its
+safe textual surrogate. Register a converter for that exact validated-value type
+when the application deliberately makes that decision. Pending values,
+cross-validation candidates, entity-resolution candidates, and authorization
+evidence always remain blocked. Cross-validated receivers remain blocked on input.
 
 ## Value chains
 

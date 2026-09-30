@@ -1,6 +1,6 @@
 #pragma warning disable CS1591
 
-namespace Owasp.Untrust.VV.Archetypes;
+namespace Owasp.Untrust.VV.Core;
 
 /// <summary>An immutable inclusive range.</summary>
 public readonly struct Bounds<TValue> : IEquatable<Bounds<TValue>>

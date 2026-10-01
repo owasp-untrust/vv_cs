@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
@@ -33,7 +34,9 @@ internal static class ValidatedValueTypeInspector
             candidate.GetGenericTypeDefinition() == typeof(IParsable<>) &&
             candidate.GenericTypeArguments[0] == type);
 
-    internal static bool IsOptional(Type type, out Type? elementType)
+    internal static bool TryExtractOptionalElement(
+        Type type,
+        [MaybeNullWhen(false)] out Type? elementType)
     {
         if (type.IsGenericType &&
             type.GetGenericTypeDefinition().FullName == "Owasp.Untrust.VV.Core.Optional`1")
@@ -65,13 +68,13 @@ internal static class ValidatedValueTypeInspector
 
     internal static Type? UnderlyingType(Type type)
     {
-        var securedBase = FindValidatedValueBase(type);
+        Type? securedBase = FindValidatedValueBase(type);
         if (securedBase is null)
         {
-            return null;
+            return null; // untrust-null-represents-no-value: type has no validated-value base from which to extract a primitive
         }
 
-        var argumentIndex = securedBase.GetGenericTypeDefinition().FullName ==
+        int argumentIndex = securedBase.GetGenericTypeDefinition().FullName ==
             "Owasp.Untrust.VV.CrossValidation.CrossValidationCandidate`5"
             ? 2
             : 1;
@@ -80,8 +83,8 @@ internal static class ValidatedValueTypeInspector
 
     internal static bool TryGetPublicDisclosure(
         Type type,
-        out Type? valueType,
-        out Type? disclosureType)
+        [MaybeNullWhen(false)] out Type? valueType,
+        [MaybeNullWhen(false)] out Type? disclosureType)
     {
         Type? securedBase = FindValidatedValueBase(type);
         if (securedBase is null || securedBase.GenericTypeArguments.Length < 3)
@@ -104,12 +107,15 @@ internal static class ValidatedValueTypeInspector
         return false;
     }
 
-    internal static bool TryGetStaticProperty(Type type, string simpleName, out object? value)
+    internal static bool TryGetStaticProperty(
+        Type type,
+        string simpleName,
+        [MaybeNullWhen(false)] out object? value)
     {
         const BindingFlags FLAGS =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy;
 
-        var property = type
+        PropertyInfo? property = type
             .GetProperties(FLAGS)
             .FirstOrDefault(candidate =>
                 candidate.GetIndexParameters().Length == 0 &&
@@ -124,7 +130,7 @@ internal static class ValidatedValueTypeInspector
 
         try
         {
-            value = property.GetValue(null);
+            value = property.GetValue(null); // untrust-null-represents-no-value: confirmed static property access has no target instance
             return true;
         }
         catch (TargetInvocationException)

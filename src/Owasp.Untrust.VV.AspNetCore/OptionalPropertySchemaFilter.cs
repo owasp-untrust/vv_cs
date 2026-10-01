@@ -15,22 +15,22 @@ internal sealed class OptionalPropertySchemaFilter : ISchemaFilter
             return;
         }
 
-        foreach (var property in context.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (PropertyInfo property in context.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (!ValidatedValueTypeInspector.IsOptional(property.PropertyType, out _))
+            if (!ValidatedValueTypeInspector.TryExtractOptionalElement(property.PropertyType, out _))
             {
                 continue;
             }
 
-            var declaredName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
-            var candidateNames = new[]
+            string? declaredName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
+            string?[] candidateNames = new[]
             {
                 declaredName,
                 property.Name,
                 JsonNamingPolicy.CamelCase.ConvertName(property.Name)
             };
 
-            var schemaName = candidateNames.FirstOrDefault(name =>
+            string? schemaName = candidateNames.FirstOrDefault(name =>
                 name is not null && schema.Properties.ContainsKey(name));
             if (schemaName is null)
             {

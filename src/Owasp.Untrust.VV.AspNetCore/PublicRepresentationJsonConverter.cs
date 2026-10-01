@@ -85,7 +85,7 @@ internal sealed class ParsableValidatedValueJsonConverter<T>
                 $"Cross-validated receiver '{typeof(T).Name}' cannot be deserialized.");
         }
 
-        var raw = ReadScalarText(ref reader);
+        string raw = ReadScalarText(ref reader);
         if (!T.TryParse(raw, CultureInfo.InvariantCulture, out var result))
         {
             throw new JsonException($"The JSON value is not a valid '{typeof(T).Name}'.");

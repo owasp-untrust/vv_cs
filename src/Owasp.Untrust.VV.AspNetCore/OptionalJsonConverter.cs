@@ -19,7 +19,7 @@ internal sealed class OptionalJsonConverter<T> : JsonConverter<Optional<T>>
             return Optional<T>.None;
         }
 
-        var parsed = JsonSerializer.Deserialize<T>(ref reader, options);
+        T? parsed = JsonSerializer.Deserialize<T>(ref reader, options);
         if (parsed is null)
         {
             throw new JsonException($"The JSON value is not a valid '{typeof(T).Name}'.");

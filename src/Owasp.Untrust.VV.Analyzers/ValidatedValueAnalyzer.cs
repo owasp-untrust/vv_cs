@@ -9,16 +9,16 @@ namespace Owasp.Untrust.VV.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
 {
-    internal const string MustBeSealedId = "VV2001";
-    internal const string ExactSelfTypeId = "VV2002";
-    internal const string ConstructorVisibilityId = "VV2003";
-    internal const string PublicMutableStateId = "VV2004";
-    internal const string RawExposureNameId = "VV2005";
-    internal const string ReceiverParsingId = "VV2006";
-    internal const string CandidateExposureId = "VV2007";
+    internal const string MUST_BE_SEALED_ID = "VV2001";
+    internal const string EXACT_SELF_TYPE_ID = "VV2002";
+    internal const string CONSTRUCTOR_VISIBILITY_ID = "VV2003";
+    internal const string PUBLIC_MUTABLE_STATE_ID = "VV2004";
+    internal const string RAW_EXPOSURE_NAME_ID = "VV2005";
+    internal const string RECEIVER_PARSING_ID = "VV2006";
+    internal const string CANDIDATE_EXPOSURE_ID = "VV2007";
 
     private static readonly DiagnosticDescriptor MustBeSealed = new(
-        MustBeSealedId,
+        MUST_BE_SEALED_ID,
         "Validated-value leaves must be sealed",
         "Concrete validated-value type '{0}' must be sealed",
         "Owasp.Untrust.VV.Security",
@@ -27,7 +27,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         description: "Sealing concrete values prevents derived types from weakening their validation or disclosure policy.");
 
     private static readonly DiagnosticDescriptor ExactSelfType = new(
-        ExactSelfTypeId,
+        EXACT_SELF_TYPE_ID,
         "Validated-value CRTP self type must be exact",
         "Validated-value type '{0}' supplies '{1}' as its self type; it must supply itself",
         "Owasp.Untrust.VV.Security",
@@ -36,7 +36,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         description: "An exact self type is required for safe static parsing and construction.");
 
     private static readonly DiagnosticDescriptor ConstructorVisibility = new(
-        ConstructorVisibilityId,
+        CONSTRUCTOR_VISIBILITY_ID,
         "Validated-value constructors must be private",
         "Constructor for concrete validated-value type '{0}' must be private",
         "Owasp.Untrust.VV.Security",
@@ -45,7 +45,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         description: "Only Parse and TryParse may construct a concrete validated value.");
 
     private static readonly DiagnosticDescriptor PublicMutableState = new(
-        PublicMutableStateId,
+        PUBLIC_MUTABLE_STATE_ID,
         "Validated values must not expose mutable or raw state",
         "Member '{0}' exposes public raw or mutable state on validated-value type '{1}'",
         "Owasp.Untrust.VV.Security",
@@ -54,7 +54,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         description: "Validated values must be immutable and must not expose their raw value as a property or field.");
 
     private static readonly DiagnosticDescriptor RawExposureName = new(
-        RawExposureNameId,
+        RAW_EXPOSURE_NAME_ID,
         "Raw values may only escape through ExposeUnchecked",
         "Member '{0}' returns the underlying value; the only permitted escape-hatch name is 'ExposeUnchecked'",
         "Owasp.Untrust.VV.Security",
@@ -63,7 +63,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         description: "A conspicuous, consistently named escape hatch keeps raw exposure visible during review.");
 
     private static readonly DiagnosticDescriptor ReceiverParsing = new(
-        ReceiverParsingId,
+        RECEIVER_PARSING_ID,
         "Cross-validated receivers must not be request-parseable",
         "Cross-validated receiver '{0}' must not implement IParsable<T> or ISpanParsable<T>",
         "Owasp.Untrust.VV.Security",
@@ -72,7 +72,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         description: "A receiver may only be minted by successful external or contextual validation.");
 
     private static readonly DiagnosticDescriptor CandidateExposure = new(
-        CandidateExposureId,
+        CANDIDATE_EXPOSURE_ID,
         "Cross-validation candidates must not expose raw state",
         "Cross-validation candidate '{0}' must not declare ExposeUnchecked",
         "Owasp.Untrust.VV.Security",
@@ -99,14 +99,14 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeNamedType(SymbolAnalysisContext context)
     {
-        var type = (INamedTypeSymbol)context.Symbol;
+        INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
         if (type.TypeKind != TypeKind.Class)
         {
             return;
         }
 
-        var validatedBase = FindSecurityValueBase(type, out var wrappedTypeArgumentIndex);
-        if (validatedBase is not null && !type.IsAbstract)
+        INamedTypeSymbol? validatedBase = FindSecurityValueBase(type, out int wrappedTypeArgumentIndex);
+        if (validatedBase is { } && !type.IsAbstract)
         {
             AnalyzeConcreteLeaf(context, type, validatedBase, wrappedTypeArgumentIndex);
         }
@@ -151,7 +151,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
                 validatedBase.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)));
         }
 
-        foreach (var constructor in type.InstanceConstructors)
+        foreach (IMethodSymbol constructor in type.InstanceConstructors)
         {
             if (constructor.DeclaredAccessibility != Accessibility.Private)
             {
@@ -162,11 +162,18 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        var wrappedType = validatedBase.TypeArguments.Length > wrappedTypeArgumentIndex
-            ? validatedBase.TypeArguments[wrappedTypeArgumentIndex]
-            : null;
+        ITypeSymbol? wrappedType;
+        if (validatedBase.TypeArguments.Length > wrappedTypeArgumentIndex)
+        {
+            wrappedType = validatedBase.TypeArguments[wrappedTypeArgumentIndex];
+        }
+        else
+        {
+            // untrust-allow-null: A missing generic argument is the explicit absent wrapped-type result used by this analyzer.
+            wrappedType = null;
+        }
 
-        foreach (var member in type.GetMembers())
+        foreach (ISymbol member in type.GetMembers())
         {
             switch (member)
             {
@@ -175,7 +182,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
                     {
                         ReportRawAlias(context, property);
                     }
-                    else if (property.SetMethod is not null ||
+                    else if (property.SetMethod is { } ||
                              (!property.IsStatic && IsWrappedType(property.Type, wrappedType)))
                     {
                         ReportPublicState(context, property, type);
@@ -252,7 +259,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         INamedTypeSymbol type,
         out int wrappedTypeArgumentIndex)
     {
-        for (var current = type.BaseType; current is not null; current = current.BaseType)
+        for (INamedTypeSymbol? current = type.BaseType; current is { }; current = current.BaseType)
         {
             if (!current.ContainingNamespace.ToDisplayString().StartsWith(
                     "Owasp.Untrust.VV",
@@ -282,6 +289,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         }
 
         wrappedTypeArgumentIndex = 1;
+        // untrust-allow-null: This nullable Roslyn lookup returns null only when no recognized security base type was found.
         return null;
     }
 
@@ -301,7 +309,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         INamedTypeSymbol type,
         string methodName)
     {
-        for (INamedTypeSymbol? current = type; current is not null; current = current.BaseType)
+        for (INamedTypeSymbol? current = type; current is { }; current = current.BaseType)
         {
             if (current.GetMembers(methodName).OfType<IMethodSymbol>().Any(IsPublicInstanceMethod))
             {
@@ -316,7 +324,7 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
     }
 
     private static bool IsWrappedType(ITypeSymbol candidate, ITypeSymbol? wrappedType) =>
-        wrappedType is not null && SymbolEqualityComparer.Default.Equals(candidate, wrappedType);
+        wrappedType is { } && SymbolEqualityComparer.Default.Equals(candidate, wrappedType);
 
     private static bool IsForbiddenRawAlias(string name) => name is
         "Value" or

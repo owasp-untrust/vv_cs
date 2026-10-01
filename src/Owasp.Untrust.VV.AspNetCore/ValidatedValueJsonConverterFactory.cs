@@ -9,21 +9,21 @@ internal sealed class ValidatedValueJsonConverterFactory : JsonConverterFactory
     public override bool CanConvert(Type typeToConvert) =>
         ValidatedValueTypeInspector.IsPubliclyRepresentable(typeToConvert) ||
         ValidatedValueTypeInspector.IsAuthorizedEntity(typeToConvert) ||
-        ValidatedValueTypeInspector.IsOptional(typeToConvert, out _);
+        ValidatedValueTypeInspector.TryExtractOptionalElement(typeToConvert, out _);
 
     public override JsonConverter CreateConverter(
         Type typeToConvert,
         JsonSerializerOptions options)
     {
-        if (ValidatedValueTypeInspector.IsOptional(typeToConvert, out var elementType))
+        if (ValidatedValueTypeInspector.TryExtractOptionalElement(typeToConvert, out Type? elementType))
         {
-            var optionalConverter = typeof(OptionalJsonConverter<>).MakeGenericType(elementType!);
+            Type optionalConverter = typeof(OptionalJsonConverter<>).MakeGenericType(elementType!);
             return (JsonConverter)Activator.CreateInstance(optionalConverter)!;
         }
 
         if (ValidatedValueTypeInspector.IsAuthorizedEntity(typeToConvert))
         {
-            var evidenceConverter = typeof(AuthorizedEntityJsonConverter<>)
+            Type evidenceConverter = typeof(AuthorizedEntityJsonConverter<>)
                 .MakeGenericType(typeToConvert);
             return (JsonConverter)Activator.CreateInstance(evidenceConverter)!;
         }
@@ -38,14 +38,12 @@ internal sealed class ValidatedValueJsonConverterFactory : JsonConverterFactory
         bool completed = typeof(IValidatedValue).IsAssignableFrom(typeToConvert) &&
             !ValidatedValueTypeInspector.IsPending(typeToConvert) &&
             !ValidatedValueTypeInspector.IsCandidate(typeToConvert);
-        bool publicDisclosure = completed &&
+        Type converterType;
+        if (completed &&
             ValidatedValueTypeInspector.TryGetPublicDisclosure(
                 typeToConvert,
                 out Type? valueType,
-                out Type? disclosureType);
-
-        Type converterType;
-        if (publicDisclosure)
+                out Type? disclosureType))
         {
             Type genericConverter = parsable
                 ? typeof(ParsablePublicValidatedValueJsonConverter<,,>)

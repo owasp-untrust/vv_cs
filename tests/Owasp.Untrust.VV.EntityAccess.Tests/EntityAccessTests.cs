@@ -7,7 +7,7 @@ using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.VV.EntityAccess;
 using Xunit;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.EntityAccess.Tests;
 
 public sealed class EntityAccessTests
 {
@@ -235,7 +235,7 @@ public sealed class EntityAccessTests
     }
 
     private sealed class DocumentIdTraits :
-        IBoundedStringTraits<DocumentIdTraits, Public<string>>
+        ILengthBoundsTraits<DocumentIdTraits, Public<string>>
     {
         public static Bounds<int> LengthBounds => new(1, 64);
 
@@ -250,7 +250,7 @@ public sealed class EntityAccessTests
 
         public static string Normalize(string value) => value.Trim().ToLowerInvariant();
 
-        public static ValidationIssue? ValidateAdditional(string normalized) => null;
+        public static ValidationIssue? ValidateValue(string normalized) => null;
     }
 
     private sealed class DocumentIdCandidate :
@@ -266,7 +266,7 @@ public sealed class EntityAccessTests
 
         static DocumentIdCandidate
             IEntityResolutionCandidateFactory<DocumentIdCandidate, string>.CreateValidated(
-                InternallyValidatedValue<string, DocumentIdCandidate> validated) =>
+                PostValidationRawValue<string, DocumentIdCandidate> validated) =>
             new(validated.ValueForReadyConstruction);
 
         public ValueTask<AuthorizedEntity<Document, ReadDocument>> ResolveReadAsync(

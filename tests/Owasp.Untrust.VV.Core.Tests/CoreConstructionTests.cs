@@ -7,8 +7,9 @@ using System.Text.RegularExpressions;
 using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using System.Security.Cryptography.X509Certificates;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.Core.Tests;
 
 public sealed class CoreConstructionTests
 {
@@ -66,7 +67,7 @@ public sealed class CoreConstructionTests
 
     private sealed class NormalizedCode
         : RegexString<NormalizedCode, Public<string>>,
-          IRegexStringDefinition,
+          IRegexString,
           IParsable<NormalizedCode>
     {
         private NormalizedCode(string raw, IFormatProvider? provider)
@@ -82,7 +83,7 @@ public sealed class CoreConstructionTests
 
         public static string Normalize(string raw) => raw.Trim().ToUpperInvariant();
 
-        public static ValidationIssue? ValidateAdditional(string normalized) =>
+        public static ValidationIssue? ValidateValue(string normalized) =>
             normalized == "BAD"
                 ? new ValidationIssue("code.reserved", "The code is reserved.")
                 : null;
@@ -101,23 +102,12 @@ public sealed class CoreConstructionTests
     }
 
     private sealed class Port
-        : BoundedNumber<Port, int, Public<int>>,
-          IBoundedNumberDefinition<int>,
-          IParsable<Port>
+        : BoundedNumber<Port, int, Public<int>>
+        , IBoundedNumber<int>
+        , IValidatedValueWrapperFactory<Port, int>
     {
-        private Port(string raw, IFormatProvider? provider)
-            : base(raw, provider)
-        {
-        }
+        private Port(int value) : base(value) { }
 
         public static Bounds<int> Bounds => new(1, 65535);
-
-        public static Port Parse(string raw, IFormatProvider? provider) => new(raw, provider);
-
-        public static bool TryParse(
-            string? raw,
-            IFormatProvider? provider,
-            [MaybeNullWhen(false)] out Port result) =>
-            TryParseCore(raw, provider, static (value, format) => new Port(value, format), out result);
     }
 }

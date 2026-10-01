@@ -7,7 +7,7 @@ using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.Core.Tests;
 
 public sealed class CoreArchetypeTests
 {
@@ -74,7 +74,7 @@ public sealed class CoreArchetypeTests
 
     private sealed class SafeLine
         : SingleLine<SafeLine, Public<string>, RejectTabs>,
-          IBoundedStringDefinition,
+          IBoundedString,
           IParsable<SafeLine>
     {
         private SafeLine(string raw, IFormatProvider? provider) : base(raw, provider) { }
@@ -86,7 +86,7 @@ public sealed class CoreArchetypeTests
 
     private sealed class SafeMultiline
         : Multiline<SafeMultiline, Public<string>, RejectTabs>,
-          IBoundedStringDefinition,
+          IBoundedString,
           IParsable<SafeMultiline>
     {
         private SafeMultiline(string raw, IFormatProvider? provider) : base(raw, provider) { }
@@ -98,7 +98,7 @@ public sealed class CoreArchetypeTests
 
     private sealed class HexIdentifier
         : HexString<HexIdentifier, Public<string>>,
-          IBoundedStringDefinition,
+          IBoundedString,
           IParsable<HexIdentifier>
     {
         private HexIdentifier(string raw, IFormatProvider? provider) : base(raw, provider) { }
@@ -110,7 +110,7 @@ public sealed class CoreArchetypeTests
 
     private sealed class StandardToken
         : Base64<StandardToken, RedactedSecret<string>, StandardBase64>,
-          IBoundedStringDefinition,
+          IBoundedString,
           IParsable<StandardToken>
     {
         private StandardToken(string raw, IFormatProvider? provider) : base(raw, provider) { }
@@ -122,7 +122,7 @@ public sealed class CoreArchetypeTests
 
     private sealed class UrlToken
         : Base64<UrlToken, RedactedSecret<string>, UrlSafeBase64>,
-          IBoundedStringDefinition,
+          IBoundedString,
           IParsable<UrlToken>
     {
         private UrlToken(string raw, IFormatProvider? provider) : base(raw, provider) { }
@@ -134,10 +134,11 @@ public sealed class CoreArchetypeTests
 
     private sealed class PublicIp
         : IpAddressValue<PublicIp, Public<IPAddress>, ExternalIpAddress>,
-          IIpAddressDefinition,
+          IIpAddressAdditionalValidation,
           IParsable<PublicIp>
     {
         private PublicIp(string raw, IFormatProvider? provider) : base(raw, provider) { }
+        public static ValidationIssue? ValidateValue(IPAddress address) => null; // untrust-null-represents-no-value: The external address passed every additional validation rule.
         public static PublicIp Parse(string raw, IFormatProvider? provider) => new(raw, provider);
         public static bool TryParse(string? raw, IFormatProvider? provider, [MaybeNullWhen(false)] out PublicIp result) =>
             TryParseCore(raw, provider, static (value, format) => new PublicIp(value, format), out result);

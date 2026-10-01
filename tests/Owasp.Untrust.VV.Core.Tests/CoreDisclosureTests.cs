@@ -6,7 +6,7 @@ using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.Core.Tests;
 
 public sealed class CoreDisclosureTests
 {
@@ -54,7 +54,7 @@ public sealed class CoreDisclosureTests
 
     private sealed class PublicCode
         : BoundedString<PublicCode, Public<string>>,
-          IBoundedStringDefinition,
+          IBoundedString,
           IParsable<PublicCode>
     {
         private PublicCode(string raw, IFormatProvider? provider)

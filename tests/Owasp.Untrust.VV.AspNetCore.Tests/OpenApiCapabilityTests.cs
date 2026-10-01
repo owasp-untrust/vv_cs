@@ -3,7 +3,7 @@ using Xunit;
 using Owasp.Untrust.VV.AspNetCore;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.AspNetCore.Tests;
 
 public sealed class OpenApiCapabilityTests
 {

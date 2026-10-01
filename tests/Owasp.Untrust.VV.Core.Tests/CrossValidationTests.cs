@@ -4,7 +4,7 @@ using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.VV.CrossValidation;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.Core.Tests;
 
 public sealed class CrossValidationTests
 {
@@ -118,7 +118,7 @@ public sealed class CrossValidationTests
 
         static ExistingEmailCandidate
             ICrossValidationCandidateFactory<ExistingEmailCandidate, string>.CreateValidated(
-                InternallyValidatedValue<string, ExistingEmailCandidate> validated) =>
+                PostValidationRawValue<string, ExistingEmailCandidate> validated) =>
             new(validated.ValueForReadyConstruction);
 
         public ValueTask<ExistingEmail> ConfirmExistsAsync(

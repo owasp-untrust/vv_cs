@@ -5,7 +5,7 @@ using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 using Owasp.Untrust.VV.Sensitivity;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.Core.Tests;
 
 public sealed class SensitivityLifecycleTests
 {
@@ -72,18 +72,26 @@ public sealed class SensitivityLifecycleTests
     }
 
     [Fact]
-    public async Task TokenAndSecretReferenceOnlyStatesDoNotRetainSource()
+    public void AuthenticatedEncryptionEnvelopeUsesEmptyKeyIdWhenNotProvided()
+    {
+        AuthenticatedEncryptionEnvelope envelope = new([1], [2], [3]);
+
+        Assert.Equal(string.Empty, envelope.KeyIdOrBlank);
+    }
+
+    [Fact]
+    public async Task TokenAndVaultPathOnlyStatesDoNotRetainSource()
     {
         Email email = Email.Parse("alice@example.com", null);
         InMemorySecretStore store = new();
-        SecretReference reference = new("users/alice/api-key");
+        VaultPath reference = new("users/alice/api-key");
 
         TokenOnlyValue<string, RedactedPii<string>> tokenOnly = await email
             .PendingTokenization()
             .TokenizeOnlyAsync<RedactedPii<string>>(new FixedTokenizer("tok_123"));
-        SecretReferenceOnlyValue<string, RedactedSecret<SecretReference>> secretOnly =
+        StoredValueVaultPath<string, RedactedSecret<VaultPath>> secretOnly =
             await email.PendingSecret()
-                .StoreOnlyAsync<RedactedSecret<SecretReference>>(store, reference);
+                .StoreOnlyAsync<RedactedSecret<VaultPath>>(store, reference);
 
         Assert.Equal("tok_123", tokenOnly.Token);
         Assert.Equal("[sensitive]", tokenOnly.ToString());
@@ -115,9 +123,9 @@ public sealed class SensitivityLifecycleTests
     [InlineData("C:\\absolute\\key")]
     [InlineData("users/../key")]
     [InlineData("users//key")]
-    public void SecretReferencesRejectUnboundedPaths(string path)
+    public void VaultPathsRejectUnboundedPaths(string path)
     {
-        Assert.ThrowsAny<ArgumentException>(() => new SecretReference(path));
+        Assert.ThrowsAny<ArgumentException>(() => new VaultPath(path));
     }
 
     private static void AssertNoPlaintextStorage(Type transformedType)
@@ -185,7 +193,7 @@ public sealed class SensitivityLifecycleTests
         public string? StoredSecret { get; private set; }
 
         public ValueTask StoreAsync(
-            SecretReference reference,
+            VaultPath reference,
             string secret,
             CancellationToken cancellationToken = default)
         {
@@ -195,7 +203,7 @@ public sealed class SensitivityLifecycleTests
         }
 
         public ValueTask<string> RetrieveAsync(
-            SecretReference reference,
+            VaultPath reference,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

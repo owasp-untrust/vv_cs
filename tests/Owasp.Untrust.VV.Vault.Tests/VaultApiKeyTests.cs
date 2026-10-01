@@ -3,7 +3,7 @@ using Owasp.Untrust.VV.Vault;
 using Owasp.Untrust.VV.Core;
 using Xunit;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.Vault.Tests;
 
 public sealed class VaultApiKeyTests
 {
@@ -11,7 +11,7 @@ public sealed class VaultApiKeyTests
     public async Task PendingApiKeyStoresThePrimitiveBeforeCreatingTheVaultBackedReadyValue()
     {
         InMemorySecretStore store = new();
-        SecretReference reference = new("users/alice/ai/openai");
+        VaultPath reference = new("users/alice/ai/openai");
         PendingApiKey pending = PendingApiKey.Parse("abcdefghijklmnopqrstuvwxyz123456", null);
 
         VaultStoredApiKey stored = await pending.StoreInVaultAsync(store, reference);
@@ -32,13 +32,13 @@ public sealed class VaultApiKeyTests
     {
         public string StoredSecret { get; private set; } = string.Empty;
 
-        public ValueTask StoreAsync(SecretReference reference, string secret, CancellationToken cancellationToken = default)
+        public ValueTask StoreAsync(VaultPath reference, string secret, CancellationToken cancellationToken = default)
         {
             StoredSecret = secret;
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask<string> RetrieveAsync(SecretReference reference, CancellationToken cancellationToken = default) =>
+        public ValueTask<string> RetrieveAsync(VaultPath reference, CancellationToken cancellationToken = default) =>
             ValueTask.FromResult(StoredSecret);
     }
 }

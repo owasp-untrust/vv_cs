@@ -10,7 +10,7 @@ using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 using Xunit;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.AspNetCore.Tests;
 
 public sealed class GeneratedTraitsTests
 {
@@ -102,7 +102,7 @@ public sealed partial class GeneratedSlug
 }
 
 public readonly struct GeneratedSlugTraits :
-    IBoundedStringTraits<GeneratedSlugTraits, Public<string>>,
+    ILengthBoundsTraits<GeneratedSlugTraits, Public<string>>,
     IWireFormatTraits
 {
     public static Bounds<int> LengthBounds => new(2, 8);
@@ -117,7 +117,7 @@ public readonly struct GeneratedSlugTraits :
 
     public static string Normalize(string value) => value.Trim().ToLowerInvariant();
 
-    public static ValidationIssue? ValidateAdditional(string normalized) =>
+    public static ValidationIssue? ValidateValue(string normalized) =>
         normalized.All(character => character is >= 'a' and <= 'z')
             ? null
             : new ValidationIssue("slug.characters", "The slug contains unsupported characters.");
@@ -152,7 +152,7 @@ public readonly struct BusinessDateTraits :
 
     public static DateOnly Normalize(DateOnly value) => value;
 
-    public static ValidationIssue? ValidateAdditional(DateOnly normalized) => null;
+    public static ValidationIssue? ValidateValue(DateOnly normalized) => null;
 }
 
 [ValidatedFromTraits<GeneratedIdentifierTraits>]
@@ -179,7 +179,7 @@ public readonly struct GeneratedIdentifierTraits :
 
     public static string Normalize(string value) => value.ToLowerInvariant();
 
-    public static ValidationIssue? ValidateAdditional(string normalized) => null;
+    public static ValidationIssue? ValidateValue(string normalized) => null;
 }
 
 [ValidatedFromTraits<DisplayNameTraits>]
@@ -206,7 +206,7 @@ public readonly struct DisplayNameTraits :
 
     public static string Normalize(string value) => value;
 
-    public static ValidationIssue? ValidateAdditional(string normalized) =>
+    public static ValidationIssue? ValidateValue(string normalized) =>
         AllOf<NoLeadingOrTrailingWhitespace, NoRepeatedWhitespace>.Validate(normalized);
 }
 
@@ -234,5 +234,5 @@ public readonly struct GeneratedNotesTraits :
 
     public static string Normalize(string value) => value;
 
-    public static ValidationIssue? ValidateAdditional(string normalized) => null;
+    public static ValidationIssue? ValidateValue(string normalized) => null;
 }

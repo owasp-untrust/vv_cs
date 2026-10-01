@@ -13,7 +13,7 @@ using Owasp.Untrust.VV.EntityAccess;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 using Xunit;
 
-namespace Owasp.Untrust.VV.Tests;
+namespace Owasp.Untrust.VV.AspNetCore.Tests;
 
 /// <summary>Exercises the ASP.NET JSON integration's security boundaries.</summary>
 public sealed class IntegrationJsonTests
@@ -123,7 +123,7 @@ public sealed class IntegrationJsonTests
 
     private sealed class IntegrationPublicText :
         BoundedString<IntegrationPublicText, Public<string>>,
-        IBoundedStringDefinition,
+        IBoundedString,
         IParsable<IntegrationPublicText>
     {
         private IntegrationPublicText(string raw, IFormatProvider? provider)
@@ -153,7 +153,7 @@ public sealed class IntegrationJsonTests
 
     private sealed class IntegrationSecretText :
         BoundedString<IntegrationSecretText, RedactedSecret<string>>,
-        IBoundedStringDefinition,
+        IBoundedString,
         IParsable<IntegrationSecretText>
     {
         private IntegrationSecretText(string raw, IFormatProvider? provider)
@@ -181,31 +181,22 @@ public sealed class IntegrationJsonTests
         }
     }
 
-    private sealed class IntegrationPublicPortPoc :
-        BoundedNumber<IntegrationPublicPortPoc, int, Public<int>>,
-        IBoundedNumberDefinition<int>,
-        IParsable<IntegrationPublicPortPoc>
+    private class PublicPortTraits : IParsableTraits<int>
     {
-        private IntegrationPublicPortPoc(string raw, IFormatProvider? provider)
-            : base(raw, provider)
-        {
-        }
-
         public static Bounds<int> Bounds => new(1, 65535);
 
-        public static IntegrationPublicPortPoc Parse(string raw, IFormatProvider? provider) =>
-            new(raw, provider);
+        public static int NormalizeValue(int value) => value;
 
-        public static bool TryParse(
-            string? raw,
-            IFormatProvider? provider,
-            [MaybeNullWhen(false)] out IntegrationPublicPortPoc result) =>
-            TryParseCore(
-                raw,
-                provider,
-                static (value, formatProvider) =>
-                    new IntegrationPublicPortPoc(value, formatProvider),
-                out result);
+        public static ValidationIssue? ValidateValue(int value) => null;
+    }
+
+    private sealed class IntegrationPublicPortPoc 
+        : ValidatedParsableFromTraits<IntegrationPublicPortPoc, int, PublicPortTraits, Public<int>>
+    {
+        private IntegrationPublicPortPoc(TValue value)
+            : base(value)
+        {
+        }
     }
 
     private sealed class IntegrationCandidate :

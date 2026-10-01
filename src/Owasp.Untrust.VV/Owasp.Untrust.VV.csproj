@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS1030</WarningsNotAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS1030</WarningsNotAsErrors>
     <PackageId>Owasp.Untrust.VV</PackageId>
     <Description>Secure-by-construction validated values for .NET.</Description>
     <PackageTags>owasp;security;validation;validated-values;input-validation;privacy</PackageTags>

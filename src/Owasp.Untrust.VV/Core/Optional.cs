@@ -37,7 +37,7 @@ public readonly struct Optional<T> : IParsable<Optional<T>>
     public static bool TryParse(
         string? raw,
         IFormatProvider? provider,
-        [MaybeNullWhen(false)] out Optional<T> result)
+        out Optional<T> result)
     {
         if (raw is null)
         {
@@ -45,7 +45,7 @@ public readonly struct Optional<T> : IParsable<Optional<T>>
             return true;
         }
 
-        if (T.TryParse(raw, provider, out var parsed))
+        if (T.TryParse(raw, provider, out T? parsed))
         {
             result = Some(parsed);
             return true;

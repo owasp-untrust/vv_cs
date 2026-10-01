@@ -74,17 +74,16 @@ public interface IExplicitEntityAuthorizationPolicy<in TEntity, in TSubject, in 
 
 public readonly record struct EntityAuthorizationDecision
 {
-    private EntityAuthorizationDecision(bool allowed, string? denialCode)
+    private EntityAuthorizationDecision(string denialCode)
     {
-        Allowed = allowed;
         DenialCode = denialCode;
     }
 
-    public bool Allowed { get; }
+    public bool Allowed { get { return DenialCode is null; } }
 
     public string? DenialCode { get; }
 
-    public static EntityAuthorizationDecision Allow { get; } = new(true, null);
+    public static EntityAuthorizationDecision Allow { get; } = new();
 
     public static EntityAuthorizationDecision Deny(Hardcoded denialCode)
     {
@@ -95,7 +94,7 @@ public readonly record struct EntityAuthorizationDecision
             throw new ArgumentException("A denial code must not be blank.", nameof(denialCode));
         }
 
-        return new EntityAuthorizationDecision(false, code);
+        return new EntityAuthorizationDecision(code);
     }
 }
 

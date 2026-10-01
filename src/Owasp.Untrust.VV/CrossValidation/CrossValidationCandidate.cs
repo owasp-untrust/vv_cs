@@ -15,15 +15,13 @@ public abstract class CrossValidationCandidate<
     TValue,
     TReceiver,
     TTraits,
-    TArchetype,
     TDisclosure> : ICrossValidationCandidate, IParsable<TCandidate>
-    where TCandidate : CrossValidationCandidate<TCandidate, TValue, TReceiver, TTraits, TArchetype, TDisclosure>,
+    where TCandidate : CrossValidationCandidate<TCandidate, TValue, TReceiver, TTraits, TDisclosure>,
         ICrossValidationCandidateFactory<TCandidate, TValue>
-    where TValue : notnull
+    where TValue : notnull, IParsable<TValue>
     where TReceiver : CrossValidatedValue<TReceiver, TValue, TDisclosure>,
         ICrossValidatedValueFactory<TReceiver, TValue>
-    where TTraits : IValidationTraits<TValue, TDisclosure>
-    where TArchetype : IValidationArchetype<TValue>
+    where TTraits : IParsableTraits<TValue>
     where TDisclosure : IDisclosurePolicy<TValue>
 {
     private readonly TValue _locallyValidated;
@@ -55,21 +53,21 @@ public abstract class CrossValidationCandidate<
 
     public static TCandidate Parse(string text, IFormatProvider? provider)
     {
-        TValue validated = ValidationTraitsPipeline.Run<TValue, TTraits, TArchetype, TDisclosure>(text, provider);
-        return TCandidate.CreateValidated(new InternallyValidatedValue<TValue, TCandidate>(validated));
+        TValue validated = ValidationTraitsPipeline.Run<TValue, TTraits>(text, provider);
+        return TCandidate.CreateValidated(new PostValidationRawValue<TValue, TCandidate>(validated));
     }
 
     public static bool TryParse(
         string? text,
         IFormatProvider? provider,
-        [NotNullWhen(true)] out TCandidate? result)
+        [NotNullWhen(true), MaybeNullWhen(false)] out TCandidate? result)
     {
-        if (ValidationTraitsPipeline.TryRun<TValue, TTraits, TArchetype, TDisclosure>(
+        if (ValidationTraitsPipeline.TryRun<TValue, TTraits>(
                 text,
                 provider,
                 out TValue? locallyValidated))
         {
-            result = TCandidate.CreateValidated(new InternallyValidatedValue<TValue, TCandidate>(locallyValidated));
+            result = TCandidate.CreateValidated(new PostValidationRawValue<TValue, TCandidate>(locallyValidated));
             return true;
         }
 
@@ -103,12 +101,4 @@ public abstract class CrossValidationCandidate<
             new(_locallyValidated);
         return TReceiver.CreateCrossValidated(completion);
     }
-}
-
-/// <summary>Library-only construction hook implemented explicitly by a candidate leaf.</summary>
-public interface ICrossValidationCandidateFactory<TSelf, TValue>
-    where TValue : notnull
-{
-    static abstract TSelf CreateValidated(
-        InternallyValidatedValue<TValue, TSelf> locallyValidatedValue);
 }

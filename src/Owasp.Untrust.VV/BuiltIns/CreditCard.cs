@@ -1,65 +1,61 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
-using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using Owasp.Untrust.VV.Core.StringPreprocessing;
 
 namespace Owasp.Untrust.VV;
 
 /// <summary>A Luhn-valid payment-card number rendered only as a last-four mask.</summary>
 public sealed class CreditCard
-    : BoundedString<CreditCard, MaskedPii<string, CreditCardMasker>>,
-      IBoundedStringDefinition,
-      IParsable<CreditCard>
+    : ExposableString<
+        CreditCard,
+        CreditCard.CreditCardTraits,
+        MaskedPii<string, CreditCard.CreditCardMasker>>,
+      IValidatedValueWrapperFactory<CreditCard, string>
 {
-    private static readonly CreditCardAttribute Validator = new();
-
-    private CreditCard(string raw, IFormatProvider? provider)
-        : base(raw, provider)
+    private CreditCard(string validatedValue)
+        : base(validatedValue)
     {
     }
 
-    /// <inheritdoc />
-    public static Bounds<int> LengthBounds => new(8, 20);
+    public static Bounds<int> LengthBounds => CreditCardTraits.LengthBounds;
 
-    /// <inheritdoc />
-    public static string? Format => "credit-card";
+    public static string Format => "credit-card";
 
-    /// <inheritdoc />
-    public static ValidationIssue? ValidateAdditional(string normalized) =>
-        Validator.IsValid(normalized)
-            ? null
-            : new ValidationIssue("credit_card.format", "The value is not a valid payment-card number.");
+    static CreditCard IValidatedValueWrapperFactory<CreditCard, string>.CreateValidated(
+        PostValidationRawValue<string, CreditCard> validated) => new(validated.ValueForReadyConstruction);
 
-    /// <inheritdoc />
-    public static CreditCard Parse(string raw, IFormatProvider? provider) => new(raw, provider);
-
-    /// <inheritdoc />
-    public static bool TryParse(
-        string? raw,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CreditCard result) =>
-        TryParseCore(raw, provider, static (value, format) => new CreditCard(value, format), out result);
-}
-
-/// <summary>Masks every payment-card digit except the final four.</summary>
-public readonly struct CreditCardMasker : IValueMasker<string>
-{
-    /// <inheritdoc />
-    public static string Mask(string value)
+    /// <summary>Single-line Unicode and data-annotation validation for payment-card numbers.</summary>
+    public sealed class CreditCardTraits :
+        StringTraits<
+            CreditCardTraits,
+            SingleLineUnicode,
+            DataAnnotationAttributeValidator<CreditCardAttribute>>,
+        ILengthBoundsTraits<CreditCardTraits>
     {
-        Span<char> digitsBuffer = stackalloc char[value.Length];
-        var digitCount = 0;
-        foreach (var character in value)
-        {
-            if (char.IsAsciiDigit(character))
-            {
-                digitsBuffer[digitCount++] = character;
-            }
-        }
+        public static Bounds<int> LengthBounds => new(8, 20);
+    }
 
-        var visibleCount = Math.Min(4, digitCount);
-        var hiddenCount = digitCount - visibleCount;
-        return new string('*', hiddenCount) + new string(digitsBuffer.Slice(hiddenCount, visibleCount));
+    /// <summary>Masks every payment-card digit except the final four.</summary>
+    public readonly struct CreditCardMasker : IValueMasker<string>
+    {
+        /// <inheritdoc />
+        public static string Mask(string value)
+        {
+            Span<char> digitsBuffer = stackalloc char[value.Length];
+            var digitCount = 0;
+            foreach (char character in value)
+            {
+                if (char.IsAsciiDigit(character))
+                {
+                    digitsBuffer[digitCount++] = character;
+                }
+            }
+
+            int visibleCount = Math.Min(4, digitCount);
+            int hiddenCount = digitCount - visibleCount;
+            return new string('*', hiddenCount) + new string(digitsBuffer.Slice(hiddenCount, visibleCount));
+        }
     }
 }

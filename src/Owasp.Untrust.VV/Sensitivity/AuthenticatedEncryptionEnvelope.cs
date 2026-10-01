@@ -12,7 +12,7 @@ public sealed class AuthenticatedEncryptionEnvelope : IEquatable<AuthenticatedEn
         ReadOnlySpan<byte> ciphertext,
         ReadOnlySpan<byte> nonce,
         ReadOnlySpan<byte> authenticationTag,
-        string? keyId = null)
+        string keyIdOrBlank = "")
     {
         if (ciphertext.IsEmpty)
         {
@@ -29,15 +29,19 @@ public sealed class AuthenticatedEncryptionEnvelope : IEquatable<AuthenticatedEn
             throw new ArgumentException("The authentication tag must not be empty.", nameof(authenticationTag));
         }
 
-        if (keyId is not null && string.IsNullOrWhiteSpace(keyId))
+        ArgumentNullException.ThrowIfNull(keyIdOrBlank);
+
+        if (!string.IsNullOrEmpty(keyIdOrBlank) && string.IsNullOrWhiteSpace(keyIdOrBlank))
         {
-            throw new ArgumentException("A key identifier must not be blank.", nameof(keyId));
+            throw new ArgumentException(
+                "A key identifier must be either empty or non-blank.",
+                nameof(keyIdOrBlank));
         }
 
         Ciphertext = new BinaryArtifact(ciphertext);
         Nonce = new BinaryArtifact(nonce);
         AuthenticationTag = new BinaryArtifact(authenticationTag);
-        KeyId = keyId;
+        KeyIdOrBlank = keyIdOrBlank;
     }
 
     public BinaryArtifact Ciphertext { get; }
@@ -46,20 +50,20 @@ public sealed class AuthenticatedEncryptionEnvelope : IEquatable<AuthenticatedEn
 
     public BinaryArtifact AuthenticationTag { get; }
 
-    public string? KeyId { get; }
+    public string KeyIdOrBlank { get; }
 
     public bool Equals(AuthenticatedEncryptionEnvelope? other) =>
         other is not null &&
         Ciphertext.Equals(other.Ciphertext) &&
         Nonce.Equals(other.Nonce) &&
         AuthenticationTag.Equals(other.AuthenticationTag) &&
-        string.Equals(KeyId, other.KeyId, StringComparison.Ordinal);
+        string.Equals(KeyIdOrBlank, other.KeyIdOrBlank, StringComparison.Ordinal);
 
     public override bool Equals([NotNullWhen(true)] object? obj) =>
         obj is AuthenticatedEncryptionEnvelope other && Equals(other);
 
     public override int GetHashCode() =>
-        HashCode.Combine(Ciphertext, Nonce, AuthenticationTag, KeyId);
+        HashCode.Combine(Ciphertext, Nonce, AuthenticationTag, KeyIdOrBlank);
 
     public override string ToString() => "[authenticated ciphertext]";
 }

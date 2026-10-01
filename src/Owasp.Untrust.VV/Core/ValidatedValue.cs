@@ -3,6 +3,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using System.Diagnostics;
 
 namespace Owasp.Untrust.VV.Core;
 
@@ -21,7 +22,8 @@ public abstract class ValidatedValue<TSelf, TValue, TDisclosure>
 
     private protected ValidatedValue(TValue validatedValue)
     {
-        _value = validatedValue ?? throw new ArgumentNullException(nameof(validatedValue));
+        Debug.Assert(validatedValue is not null, "Validated value is not an optional value, so it should never be null.");
+        _value = validatedValue;
     }
 
     public Type ValueType => typeof(TValue);
@@ -61,23 +63,4 @@ public abstract class ValidatedValue<TSelf, TValue, TDisclosure>
             return false;
         }
     }
-}
-
-/// <summary>
-/// A locally validated value that deliberately permits callers to obtain its raw
-/// representation. Derive from <see cref="ValidatedValue{TSelf, TValue, TDisclosure}"/>
-/// directly when validation must not imply public raw-value exposure.
-/// </summary>
-public abstract class ExposableValidatedValue<TSelf, TValue, TDisclosure>
-    : ValidatedValue<TSelf, TValue, TDisclosure>, IExposableValidatedValue<TValue>
-    where TSelf : ExposableValidatedValue<TSelf, TValue, TDisclosure>
-    where TValue : notnull
-    where TDisclosure : IDisclosurePolicy<TValue>
-{
-    private protected ExposableValidatedValue(TValue validatedValue)
-        : base(validatedValue)
-    {
-    }
-
-    public TValue ExposeUnchecked() => GetValidatedValueForDerivedUse();
 }

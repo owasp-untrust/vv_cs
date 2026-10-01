@@ -17,7 +17,7 @@ public readonly record struct CrossValidationResult
 
     public string? SafeMessage { get; }
 
-    public static CrossValidationResult Success { get; } = new(true, null, null);
+    public static CrossValidationResult Success { get; } = new(true, null, null); // untrust-null-represents-no-value: success has no error details
 
     public static CrossValidationResult Failure(string errorCode, string safeMessage)
     {

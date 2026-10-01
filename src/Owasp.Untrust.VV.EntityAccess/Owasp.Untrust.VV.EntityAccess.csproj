@@ -5,6 +5,7 @@
     <PackageTags>owasp;security;validation;validated-values;authorization;entity-access</PackageTags>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <ProjectReference Include="../Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />
     <ProjectReference Include="../../../ValueDescriptors_cs/src/Owasp.Untrust.ValueDescriptors/Owasp.Untrust.ValueDescriptors.csproj" />
   </ItemGroup>

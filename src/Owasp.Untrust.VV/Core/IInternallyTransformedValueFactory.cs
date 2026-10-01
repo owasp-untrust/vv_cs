@@ -2,8 +2,8 @@
 
 namespace Owasp.Untrust.VV.Core;
 
-public interface IInternallyTransformedValueFactory<TSelf, TOutput>
-    where TOutput : notnull
+public interface IInternallyTransformedValueFactory<TSelf, TTransformedVal>
+    where TTransformedVal : notnull
 {
-    static abstract TSelf CreateTransformed(InternallyTransformedValue<TOutput, TSelf> transformed);
+    static abstract TSelf CreateTransformed(InternallyTransformedValue<TSelf, TTransformedVal> transformed);
 }

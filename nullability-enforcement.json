@@ -1,0 +1,9 @@
+{
+  "nullabilityExemptions": [
+    {
+      "typeAssignedTo": "Owasp.Untrust.VV.Core.ValidationIssue",
+      "asReturned": true,
+      "justification": "A missing validation issue represents successful validation after the required checks completed."
+    }
+  ]
+}

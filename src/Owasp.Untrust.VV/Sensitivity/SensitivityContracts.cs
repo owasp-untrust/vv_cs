@@ -32,12 +32,12 @@ public interface ITokenizationProvider<in TValue>
 public interface ISecretStore<TValue>
 {
     ValueTask StoreAsync(
-        SecretReference reference,
+        VaultPath reference,
         TValue secret,
         CancellationToken cancellationToken = default);
 
     ValueTask<TValue> RetrieveAsync(
-        SecretReference reference,
+        VaultPath reference,
         CancellationToken cancellationToken = default);
 }
 

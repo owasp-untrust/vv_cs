@@ -1,6 +1,8 @@
 #pragma warning disable CS1591
 
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 using Owasp.Untrust.VV.Core;
@@ -16,27 +18,30 @@ public interface IEntityResolutionCandidateFactory<TSelf, TId>
     where TId : notnull
 {
     static abstract TSelf CreateValidated(
-        InternallyValidatedValue<TId, TSelf> locallyValidatedId);
+        PostValidationRawValue<TId, TSelf> locallyValidatedId);
 }
 
 /// <summary>
 /// Retains a locally validated entity ID without exposing it. Resolution loads
 /// and authorizes the stored entity in one enforced asynchronous transition.
 /// </summary>
-public abstract class EntityResolutionCandidate<
-    TCandidate,
-    TId,
-    TTraits,
-    TArchetype,
-    TDisclosure> : IEntityResolutionCandidate, IParsable<TCandidate>
-    where TCandidate : EntityResolutionCandidate<TCandidate, TId, TTraits, TArchetype, TDisclosure>,
-        IEntityResolutionCandidateFactory<TCandidate, TId>
-    where TId : notnull
-    where TTraits : IValidationTraits<TId, TDisclosure>
-    where TArchetype : IValidationArchetype<TId>
+public abstract class EntityResolutionCandidate<TCandidateSelf, TId, TTraits, TDisclosure> 
+    : IEntityResolutionCandidate
+    , IParsable<TCandidateSelf>
+    where TCandidateSelf : EntityResolutionCandidate<TCandidateSelf, TId, TTraits, TDisclosure>
+        , IEntityResolutionCandidateFactory<TCandidateSelf, TId>
+    where TId : notnull, IParsable<TId>
+    where TTraits : IParsableTraits<TId>
     where TDisclosure : IDisclosurePolicy<TId>
 {
+    private static ILogger _logger = NullLogger.Instance;
     private readonly TId _locallyValidatedId;
+
+    public static void UseLogger(ILogger logger)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        Volatile.Write(ref _logger, logger);
+    }
 
     protected EntityResolutionCandidate(TId locallyValidatedId)
     {
@@ -49,7 +54,7 @@ public abstract class EntityResolutionCandidate<
 
     public sealed override string ToString() => ToPublicString();
 
-    public async ValueTask<AuthorizedEntity<TEntity>> AuthorizeAsync<TEntity, TSubject>(
+    public async ValueTask<ScopeAuthorizedEntity<TEntity>> AuthorizeAsync<TEntity, TSubject>(
         IEntityAccessRepository<TId, TEntity, TSubject> repository,
         TSubject subject,
         EntityAccessQuery query,
@@ -82,36 +87,53 @@ public abstract class EntityResolutionCandidate<
             throw new UnauthorizedAccessException("The entity is not authorized for the requested scopes.");
         }
 
-        return new AuthorizedEntity<TEntity>(lookup.Entity!, grantedScopes);
+        return new ScopeAuthorizedEntity<TEntity>(lookup.Entity!, grantedScopes);
     }
 
-    public static TCandidate Parse(string text, IFormatProvider? provider)
+    public static TCandidateSelf Parse(string text, IFormatProvider? provider)
     {
-        TId validated = LocalValidation.ParseAndValidate<TId, TTraits, TArchetype, TDisclosure>(text, provider);
-        return TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
+        TId value = TTraits.NormalizeValue(TId.Parse(text, provider));
+        ValidationIssue? issue = TTraits.ValidateValue(value);
+        ValidationTests.RequireNoIssue(issue);
+        return TCandidateSelf.CreateValidated(new PostValidationRawValue<TId, TCandidateSelf>(value));
     }
 
     public static bool TryParse(
         string? text,
         IFormatProvider? provider,
-        [NotNullWhen(true)] out TCandidate? result)
+        [MaybeNullWhen(false)] out TCandidateSelf result)
     {
-        if (text is not null)
+        if (TId.TryParse(text, provider, out TId? value))
         {
             try
             {
-                TId validated = LocalValidation.ParseAndValidate<TId, TTraits, TArchetype, TDisclosure>(text, provider);
-                result = TCandidate.CreateValidated(new InternallyValidatedValue<TId, TCandidate>(validated));
-                return true;
+                value = TTraits.NormalizeValue(value);
+                ValidationIssue? issue = TTraits.ValidateValue(value);
+                if (issue is null)
+                {
+                    result = TCandidateSelf.CreateValidated(new PostValidationRawValue<TId, TCandidateSelf>(value));
+                    Logger.LogDebug("Entity-resolution candidate parsing succeeded.");
+                    return true;
+                }
+                Logger.LogWarning("Entity-resolution candidate parsing was rejected by validation.");
             }
-            catch (ValidationException)
+            catch (ValidationException exception)
             {
+                Logger.LogWarning(
+                    "Entity-resolution candidate parsing failed with {ExceptionType}.",
+                    exception.GetType().Name);
             }
+        }
+        else
+        {
+            Logger.LogWarning("Entity-resolution candidate parsing received an invalid identifier format.");
         }
 
         result = null;
         return false;
     }
+
+    private static ILogger Logger => Volatile.Read(ref _logger);
 
     protected ValueTask<AuthorizedEntity<TEntity, TOperation>> ResolveAnyGrantAsync<
         TEntity,

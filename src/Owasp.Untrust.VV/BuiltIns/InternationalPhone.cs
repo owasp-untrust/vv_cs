@@ -1,32 +1,31 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
-using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Core.StringPreprocessing;
 
 namespace Owasp.Untrust.VV;
 
 public sealed class InternationalPhone
-    : RegexString<InternationalPhone, RedactedPii<string>>,
-        IRegexStringDefinition,
-        IParsable<InternationalPhone>
+    : ExposableString<InternationalPhone, InternationalPhone.InternationalPhoneTraits, RedactedPii<string>>,
+        IValidatedValueWrapperFactory<InternationalPhone, string>
 {
-    private InternationalPhone(string raw, IFormatProvider? provider) : base(raw, provider) { }
+    private InternationalPhone(string validatedValue) : base(validatedValue) { }
 
-    public static Bounds<int> LengthBounds => new(3, 16);
-    public static string Pattern => "\\+[1-9][0-9]{1,14}";
-    public static RegexOptions Options => RegexOptions.CultureInvariant;
-    public static TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(100);
-    public static string? Format => null;
-    public static string Normalize(string value) => value;
-    public static ValidationIssue? ValidateAdditional(string value) => null;
+    public static Bounds<int> LengthBounds => InternationalPhoneTraits.LengthBounds;
 
-    public static InternationalPhone Parse(string raw, IFormatProvider? provider) => new(raw, provider);
-
-    public static bool TryParse(
-        string? raw,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out InternationalPhone result) =>
-        TryParseCore(raw, provider, static (value, format) => new InternationalPhone(value, format), out result);
+    static InternationalPhone IValidatedValueWrapperFactory<InternationalPhone, string>.CreateValidated(
+        PostValidationRawValue<string, InternationalPhone> validated) => new(validated.ValueForReadyConstruction);
+    public sealed class InternationalPhoneTraits
+        : StringTraits<
+        InternationalPhoneTraits,
+        SingleLineUnicode,
+        RegexValidator<InternationalPhoneTraits>>,
+        ILengthBoundsTraits<InternationalPhoneTraits>,
+        IRegexPattern<InternationalPhoneTraits>
+    {
+        public static Bounds<int> LengthBounds => new(3, 16);
+        public static string Pattern => "\\+[1-9][0-9]{1,14}";
+        public static RegexOptions Options => RegexOptions.CultureInvariant;
+        public static TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(100);
+    }
 }

@@ -7,7 +7,7 @@ namespace Owasp.Untrust.VV.CrossValidation;
 
 /// <summary>
 /// Base for values that may be constructed only from receiver-specific completion
-/// evidence created by <see cref="CrossValidationCandidate{TCandidate,TValue,TReceiver,TTraits,TArchetype,TDisclosure}"/>.
+/// evidence created by <see cref="CrossValidationCandidate{TCandidate,TValue,TReceiver,TTraits,TDisclosure}"/>.
 /// </summary>
 public abstract class CrossValidatedValue<TSelf, TValue, TDisclosure> :
     IValidatedValue<TValue>,
@@ -35,19 +35,4 @@ public abstract class CrossValidatedValue<TSelf, TValue, TDisclosure> :
     public string ToPublicString() => TDisclosure.ToPublicString(_value);
 
     public sealed override string ToString() => ToPublicString();
-}
-
-/// <summary>A cross-validated value that explicitly permits raw-value exposure.</summary>
-public abstract class ExposableCrossValidatedValue<TSelf, TValue, TDisclosure>
-    : CrossValidatedValue<TSelf, TValue, TDisclosure>, IExposableValidatedValue<TValue>
-    where TSelf : ExposableCrossValidatedValue<TSelf, TValue, TDisclosure>
-    where TValue : notnull
-    where TDisclosure : IDisclosurePolicy<TValue>
-{
-    protected ExposableCrossValidatedValue(CrossValidationCompletion<TValue, TSelf> completion)
-        : base(completion)
-    {
-    }
-
-    public TValue ExposeUnchecked() => GetCrossValidatedValueForDerivedUse();
 }

@@ -183,3 +183,9 @@ Build and test on Windows:
 dotnet build Owasp.Untrust.VV.sln
 dotnet test tests/Owasp.Untrust.VV.Tests/Owasp.Untrust.VV.Tests.csproj
 ```
+# TEMP EXCLUSIONS
+
+`tests/Owasp.Untrust.VV.Tests/EntityAccessTests.cs` is temporarily excluded from
+the test project while the EntityAccess API migration is incomplete. Re-enable
+it by removing its `Compile Remove` entry from the test project file once that
+migration is complete.

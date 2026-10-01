@@ -1,11 +1,8 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Text.RegularExpressions;
 using Owasp.Untrust.ValueDescriptors;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
-using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Core.StringPreprocessing;
 
 namespace Owasp.Untrust.VV;
 
@@ -14,25 +11,23 @@ namespace Owasp.Untrust.VV;
 /// permits ASCII letters, digits, and underscores.
 /// </summary>
 public sealed class Username
-    : RegexString<Username, RedactedPii<string>>,
-        IRegexStringDefinition,
-        IParsable<Username>
+    : ExposableString<Username, Username.UsernameTraits, RedactedPii<string>>
+    , IValidatedValueWrapperFactory<Username, string>
 {
-    private Username(string raw, IFormatProvider? provider) : base(raw, provider) { }
+    private Username(string validatedValue) : base(validatedValue) { }
 
-    public static Bounds<int> LengthBounds => new(1, 128);
-    public static string Pattern => "[A-Za-z][A-Za-z0-9_]*";
-    public static RegexOptions Options => RegexOptions.CultureInvariant;
-    public static TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(100);
-    public static string? Format => null;
-    public static string Normalize(string value) => value;
-    public static ValidationIssue? ValidateAdditional(string value) => null;
+    public static Bounds<int> LengthBounds => UsernameTraits.LengthBounds;
 
-    public static Username Parse(string raw, IFormatProvider? provider) => new(raw, provider);
-
-    public static bool TryParse(
-        string? raw,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out Username result) =>
-        TryParseCore(raw, provider, static (value, format) => new Username(value, format), out result);
+    static Username IValidatedValueWrapperFactory<Username, string>.CreateValidated(
+        PostValidationRawValue<string, Username> validated) => new(validated.ValueForReadyConstruction);
+    public sealed class UsernameTraits
+        : StringTraits<UsernameTraits, SingleLineUnicode, RegexValidator<UsernameTraits>>,
+        ILengthBoundsTraits<UsernameTraits>,
+        IRegexPattern<UsernameTraits>
+    {
+        public static Bounds<int> LengthBounds => new(1, 128);
+        public static string Pattern => "[A-Za-z][A-Za-z0-9_]*";
+        public static RegexOptions Options => RegexOptions.CultureInvariant;
+        public static TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(100);
+    }
 }

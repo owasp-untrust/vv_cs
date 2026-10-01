@@ -7,11 +7,11 @@ namespace Owasp.Untrust.VV.Sensitivity;
 /// A bounded, relative logical path into a secret store. This is an identifier, not
 /// secret material.
 /// </summary>
-public sealed class SecretReference : IEquatable<SecretReference>
+public sealed class VaultPath : IEquatable<VaultPath>
 {
     public const int MAXIMUM_LENGTH = 512;
 
-    public SecretReference(string path)
+    public VaultPath(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
 
@@ -54,11 +54,11 @@ public sealed class SecretReference : IEquatable<SecretReference>
 
     public string Path { get; }
 
-    public bool Equals(SecretReference? other) =>
+    public bool Equals(VaultPath? other) =>
         other is not null && string.Equals(Path, other.Path, StringComparison.Ordinal);
 
     public override bool Equals([NotNullWhen(true)] object? obj) =>
-        obj is SecretReference other && Equals(other);
+        obj is VaultPath other && Equals(other);
 
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Path);
 

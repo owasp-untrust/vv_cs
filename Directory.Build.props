@@ -19,5 +19,16 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <BuildGatesConfigurationDirectory>$(MSBuildThisFileDirectory)</BuildGatesConfigurationDirectory>
   </PropertyGroup>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="BuildGatesConfigurationDirectory" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\BuildGates_cs\src\Owasp.Untrust.BuildGates\Owasp.Untrust.BuildGates.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)active-buildgates.json" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)nullability-enforcement.json" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)code-style.json" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)..\*.json" />
+  </ItemGroup>
 </Project>

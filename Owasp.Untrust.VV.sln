@@ -12,7 +12,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.AspNetCore
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.Analyzers", "src\Owasp.Untrust.VV.Analyzers\Owasp.Untrust.VV.Analyzers.csproj", "{37C21F8D-C2B7-4436-B4CD-688AF1D34C61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.Tests", "tests\Owasp.Untrust.VV.Tests\Owasp.Untrust.VV.Tests.csproj", "{70D48468-2DF0-48D4-BE2A-F79A5FCFF5D0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.Core.Tests", "tests\Owasp.Untrust.VV.Core.Tests\Owasp.Untrust.VV.Core.Tests.csproj", "{4A1C1E8D-19B4-4A6B-9247-605DCC221C3E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.AspNetCore.Tests", "tests\Owasp.Untrust.VV.AspNetCore.Tests\Owasp.Untrust.VV.AspNetCore.Tests.csproj", "{5B2D2F9E-2AC5-4B7C-A358-716EDD332D4F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.EntityAccess.Tests", "tests\Owasp.Untrust.VV.EntityAccess.Tests\Owasp.Untrust.VV.EntityAccess.Tests.csproj", "{6C3E30AF-3BD6-4C8D-B469-827FEE443E50}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Owasp.Untrust.VV.Vault.Tests", "tests\Owasp.Untrust.VV.Vault.Tests\Owasp.Untrust.VV.Vault.Tests.csproj", "{7D4F41B0-4CE7-4D9E-C57A-9380FF554F61}"
 EndProject
 Global
   GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,9 +31,7 @@ Global
     {1735C17A-F467-42DC-BF7B-8080843B5B9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
     {1735C17A-F467-42DC-BF7B-8080843B5B9D}.Release|Any CPU.Build.0 = Release|Any CPU
     {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-    {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-    {6C19B867-6D2F-4D18-B4C4-1B0A68F7EAF5}.Release|Any CPU.Build.0 = Release|Any CPU
     {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
     {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {BA046C4D-6F72-4B94-A847-409A1082D1BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -40,9 +44,13 @@ Global
     {37C21F8D-C2B7-4436-B4CD-688AF1D34C61}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {37C21F8D-C2B7-4436-B4CD-688AF1D34C61}.Release|Any CPU.ActiveCfg = Release|Any CPU
     {37C21F8D-C2B7-4436-B4CD-688AF1D34C61}.Release|Any CPU.Build.0 = Release|Any CPU
-    {70D48468-2DF0-48D4-BE2A-F79A5FCFF5D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-    {70D48468-2DF0-48D4-BE2A-F79A5FCFF5D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-    {70D48468-2DF0-48D4-BE2A-F79A5FCFF5D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-    {70D48468-2DF0-48D4-BE2A-F79A5FCFF5D0}.Release|Any CPU.Build.0 = Release|Any CPU
+    {4A1C1E8D-19B4-4A6B-9247-605DCC221C3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {4A1C1E8D-19B4-4A6B-9247-605DCC221C3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {5B2D2F9E-2AC5-4B7C-A358-716EDD332D4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {5B2D2F9E-2AC5-4B7C-A358-716EDD332D4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {6C3E30AF-3BD6-4C8D-B469-827FEE443E50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {6C3E30AF-3BD6-4C8D-B469-827FEE443E50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {7D4F41B0-4CE7-4D9E-C57A-9380FF554F61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {7D4F41B0-4CE7-4D9E-C57A-9380FF554F61}.Release|Any CPU.ActiveCfg = Release|Any CPU
   EndGlobalSection
 EndGlobal

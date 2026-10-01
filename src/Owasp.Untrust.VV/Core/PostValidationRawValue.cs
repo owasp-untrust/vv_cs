@@ -3,10 +3,10 @@
 namespace Owasp.Untrust.VV.Core;
 
 /// <summary>Opaque local-validation evidence that only the VV library can create.</summary>
-public sealed class InternallyValidatedValue<TValue, TReceiver>
+public sealed class PostValidationRawValue<TValue, TReceiver>
     where TValue : notnull
 {
-    internal InternallyValidatedValue(TValue value)
+    internal PostValidationRawValue(TValue value)
     {
         ValueForReadyConstruction = value;
     }

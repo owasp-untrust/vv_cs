@@ -2,6 +2,7 @@
 
 namespace Owasp.Untrust.VV.EntityAccess;
 
+/// <summary>Evidence that a specific entity operation was authorized.</summary>
 public sealed class AuthorizedEntity<TEntity, TOperation> : IAuthorizedEntity
     where TEntity : notnull
     where TOperation : IEntityOperation
@@ -19,4 +20,3 @@ public sealed class AuthorizedEntity<TEntity, TOperation> : IAuthorizedEntity
 
     public TEntity ExposeAuthorizedEntity() => _entity;
 }
-

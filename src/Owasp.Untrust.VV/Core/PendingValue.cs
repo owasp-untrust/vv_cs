@@ -7,13 +7,13 @@ using System.Diagnostics.CodeAnalysis;
 namespace Owasp.Untrust.VV.Core;
 
 /// <summary>Shared pending state that is publicly representable but deliberately non-exposable.</summary>
-public abstract class PendingValue<TSelf, TValue, TReady, TOutput, TTraits, TArchetype, TDisclosure> : IPendingValue, IParsable<TSelf>
-    where TValue : notnull
-    where TOutput : notnull
-    where TSelf : PendingValue<TSelf, TValue, TReady, TOutput, TTraits, TArchetype, TDisclosure>, IInternallyValidatedValueFactory<TSelf, TValue>
-    where TReady : IInternallyTransformedValueFactory<TReady, TOutput>
-    where TTraits : IValidationTraits<TValue, TDisclosure>
-    where TArchetype : IValidationArchetype<TValue>
+public abstract class PendingValue<TSelf, TValue, TNext, TTransformedVal, TTraits, TDisclosure> 
+    : IPendingValue, IParsable<TSelf>
+    where TValue : notnull, IParsable<TValue>
+    where TTransformedVal : notnull
+    where TSelf : PendingValue<TSelf, TValue, TNext, TTransformedVal, TTraits, TDisclosure>, IValidatedValueWrapperFactory<TSelf, TValue>
+    where TNext : IInternallyTransformedValueFactory<TNext, TTransformedVal>
+    where TTraits : IParsableTraits<TValue>
     where TDisclosure : IDisclosurePolicy<TValue>
 {
     private readonly TValue _value;
@@ -27,33 +27,33 @@ public abstract class PendingValue<TSelf, TValue, TReady, TOutput, TTraits, TArc
 
     public sealed override string ToString() => ToPublicString();
 
-    public ValueTask<TReady> CompleteAsync(IValueTransformer<TValue, TOutput> transformer, CancellationToken cancellationToken = default)
+    public ValueTask<TNext> CompleteAsync(IValueTransformer<TValue, TTransformedVal> transformer, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(transformer);
         return CompleteAsync(transformer.TransformAsync, cancellationToken);
     }
 
-    public async ValueTask<TReady> CompleteAsync(Func<TValue, CancellationToken, ValueTask<TOutput>> transformAsync, CancellationToken cancellationToken = default)
+    public async ValueTask<TNext> CompleteAsync(Func<TValue, CancellationToken, ValueTask<TTransformedVal>> transformAsync, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(transformAsync);
         cancellationToken.ThrowIfCancellationRequested();
-        TOutput output = await transformAsync(_value, cancellationToken).ConfigureAwait(false);
+        TTransformedVal output = await transformAsync(_value, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(output);
-        return TReady.CreateTransformed(new InternallyTransformedValue<TOutput, TReady>(output));
+        return TNext.CreateTransformed(new InternallyTransformedValue<TNext, TTransformedVal>(output));
     }
 
     public static TSelf Parse(string raw, IFormatProvider? provider)
     {
-        TValue value = ValidationTraitsPipeline.Run<TValue, TTraits, TArchetype, TDisclosure>(raw, provider);
-        return TSelf.CreateValidated(new InternallyValidatedValue<TValue, TSelf>(value));
+        TValue value = ValidationTraitsPipeline.Run<TValue, TTraits>(raw, provider);
+        return TSelf.CreateValidated(new PostValidationRawValue<TValue, TSelf>(value));
     }
 
     public static bool TryParse(string? raw, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
     {
-        if (ValidationTraitsPipeline.TryRun<TValue, TTraits, TArchetype, TDisclosure>(raw, provider, out TValue? value))
+        if (ValidationTraitsPipeline.TryRun<TValue, TTraits>(raw, provider, out TValue? value))
         {
-            result = TSelf.CreateValidated(new InternallyValidatedValue<TValue, TSelf>(value));
+            result = TSelf.CreateValidated(new PostValidationRawValue<TValue, TSelf>(value));
             return true;
         }
 

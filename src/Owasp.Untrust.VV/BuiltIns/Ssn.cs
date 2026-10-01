@@ -1,7 +1,9 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
-using Owasp.Untrust.VV.Archetypes;
+using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.ValueDescriptors;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using static Owasp.Untrust.ValueDescriptors.RegexAsciiFactory;
+using Owasp.Untrust.VV.Core.StringPreprocessing;
 
 namespace Owasp.Untrust.VV;
 
@@ -10,35 +12,31 @@ namespace Owasp.Untrust.VV;
 /// serial ranges are rejected and public rendering is redacted.
 /// </summary>
 public sealed class SSN 
-    : RegexString<SSN, RedactedPii<string>>
-    , IRegexStringDefinition
-    , IParsable<SSN>
+    : ExposableString<SSN, SSN.SsnTraits, RedactedPii<string>>
+    , IValidatedValueWrapperFactory<SSN, string>
 {
-    private SSN(string raw, IFormatProvider? provider)
-        : base(raw, provider)
+    private SSN(string validatedValue)
+        : base(validatedValue)
     {
     }
 
     /// <inheritdoc />
-    public static Bounds<int> LengthBounds => new(11, 11);
+    public static Bounds<int> LengthBounds => SsnTraits.LengthBounds;
 
-    /// <inheritdoc />
-    public static string Pattern =>
-        @"^(?!000)(?!666)(?!9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}$";
+    public static string Format => "ssn";
 
-    /// <inheritdoc />
-    public static RegexOptions Options => RegexOptions.CultureInvariant;
+    static SSN IValidatedValueWrapperFactory<SSN, string>.CreateValidated(
+        PostValidationRawValue<string, SSN> validated) => new(validated.ValueForReadyConstruction);
+    public sealed class SsnTraits
+        : StringTraits<SsnTraits, AsciiRegexValidator<SsnTraits>>,
+        ILengthBoundsTraits<SsnTraits>,
+        IAsciiRegexPattern<SsnTraits>
+    {
+        public static RegexAscii Pattern =>
+            RegexAscii(@"^(?!000)(?!666)(?!9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}$");
 
-    /// <inheritdoc />
-    public static string? Format => "ssn";
+        public static Bounds<int> LengthBounds => new(11, 11);
 
-    /// <inheritdoc />
-    public static SSN Parse(string raw, IFormatProvider? provider) => new(raw, provider);
-
-    /// <inheritdoc />
-    public static bool TryParse(
-        string? raw,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out SSN result) =>
-        TryParseCore(raw, provider, static (value, format) => new SSN(value, format), out result);
+        public static TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(100);
+    }
 }

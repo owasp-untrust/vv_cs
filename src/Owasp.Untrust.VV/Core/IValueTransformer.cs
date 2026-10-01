@@ -3,9 +3,9 @@
 namespace Owasp.Untrust.VV.Core;
 
 /// <summary>Turns a pending primitive into its replacement payload.</summary>
-public interface IValueTransformer<in TValue, TOutput>
+public interface IValueTransformer<in TValue, TTransformedVal>
     where TValue : notnull
-    where TOutput : notnull
+    where TTransformedVal : notnull
 {
-    ValueTask<TOutput> TransformAsync(TValue value, CancellationToken cancellationToken = default);
+    ValueTask<TTransformedVal> TransformAsync(TValue value, CancellationToken cancellationToken = default);
 }

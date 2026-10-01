@@ -13,7 +13,7 @@ namespace Owasp.Untrust.VV.Analyzers;
 public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
 {
     private const string ATTRIBUTE_NAME =
-        "Owasp.Untrust.VV.Core.ValidatedFromTraitsAttribute<TTraits>";
+        "Owasp.Untrust.VV.Core.ValidatedFromTraitsAttribute<TTraits, TDisclosure>";
 
     private static readonly DiagnosticDescriptor InvalidDeclaration = new(
         "VVG1001",
@@ -26,7 +26,7 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
     private static readonly DiagnosticDescriptor InvalidTraits = new(
         "VVG1002",
         "Traits contract is missing or ambiguous",
-        "Traits type '{0}' must implement exactly one IValidationTraits<TValue, TDisclosure> and an enforced bounded traits contract",
+        "Traits type '{0}' must be either IStringTraitsAnonymousPreprocessing<TTraits> or implement IParsableTraits<TValue>",
         "Owasp.Untrust.VV.Generation",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -53,12 +53,13 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
                 }
 
                 AttributeData? marker = type.GetAttributes().FirstOrDefault(IsMarkerAttribute);
-                if (marker?.AttributeClass is not { TypeArguments.Length: 1 } attributeClass)
+                if (marker?.AttributeClass is not { TypeArguments.Length: 2 } attributeClass)
                 {
                     continue;
                 }
 
                 INamedTypeSymbol? traits = attributeClass.TypeArguments[0] as INamedTypeSymbol;
+                ITypeSymbol? disclosure = attributeClass.TypeArguments[1];
                 if (!IsValidDeclaration(type, declaration))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
@@ -68,10 +69,10 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
                     continue;
                 }
 
-                INamedTypeSymbol[] contracts = traits?.AllInterfaces
-                    .Where(IsValidationTraitsContract)
-                    .ToArray() ?? Array.Empty<INamedTypeSymbol>();
-                if (traits is null || contracts.Length != 1)
+                INamedTypeSymbol? parsableTraits = traits?.AllInterfaces
+                    .SingleOrDefault(IsParsableTraitsContract);
+                bool isStringTraits = traits is not null && InheritsStringTraits(traits);
+                if (traits is not { } || disclosure is not { } || isStringTraits == (parsableTraits is not null))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         InvalidTraits,
@@ -80,19 +81,9 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
                     continue;
                 }
 
-                string? archetype = EnforcedArchetype(traits, contracts[0]);
-                if (archetype is null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        InvalidTraits,
-                        declaration.Identifier.GetLocation(),
-                        traits.ToDisplayString()));
-                    continue;
-                }
-
                 context.AddSource(
                     SanitizeHintName(type) + ".ValidatedFromTraits.g.cs",
-                    SourceText.From(Generate(type, traits, contracts[0], archetype), Encoding.UTF8));
+                    SourceText.From(Generate(type, traits, parsableTraits, disclosure, isStringTraits), Encoding.UTF8));
             }
         }
     }
@@ -100,15 +91,30 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
     private static bool IsMarkerAttribute(AttributeData attribute) =>
         attribute.AttributeClass?.ConstructedFrom.ToDisplayString() == ATTRIBUTE_NAME;
 
-    private static bool IsValidationTraitsContract(INamedTypeSymbol candidate) =>
-        candidate.Name == "IValidationTraits" &&
-        candidate.Arity == 2 &&
+    private static bool IsParsableTraitsContract(INamedTypeSymbol candidate) =>
+        candidate.Name == "IParsableTraits" &&
+        candidate.Arity == 1 &&
         candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Core";
+
+    private static bool InheritsStringTraits(INamedTypeSymbol traits)
+    {
+        for (INamedTypeSymbol? current = traits; current is not null; current = current.BaseType)
+        {
+            if (current.Name == "IStringTraitsAnonymousPreprocessing" &&
+                current.Arity == 1 &&
+                current.ContainingNamespace.ToDisplayString() == "StringPreprocessing")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static bool IsValidDeclaration(
         INamedTypeSymbol type,
         ClassDeclarationSyntax declaration) =>
-        type.ContainingType is null &&
+        type.ContainingType is not { } &&
         type.IsSealed &&
         declaration.Modifiers.Any(SyntaxKind.PartialKeyword) &&
         type.BaseType?.SpecialType == SpecialType.System_Object;
@@ -116,12 +122,15 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
     private static string Generate(
         INamedTypeSymbol type,
         INamedTypeSymbol traits,
-        INamedTypeSymbol contract,
-        string archetype)
+        INamedTypeSymbol? parsableTraits,
+        ITypeSymbol disclosure,
+        bool isStringTraits)
     {
         string self = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        string value = contract.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        string disclosure = contract.TypeArguments[1].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        string value = isStringTraits
+            ? "string"
+            : parsableTraits!.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        string disclosureName = disclosure.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         string traitsName = traits.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         string namespaceName = type.ContainingNamespace.IsGlobalNamespace
             ? string.Empty
@@ -137,18 +146,20 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
         }
 
         source.Append("partial class ").Append(identifier)
-            .Append(" : global::Owasp.Untrust.VV.Core.ValidatedFromTraits<")
-            .Append(self).Append(", ").Append(value).Append(", ").Append(traitsName).Append(", ")
-            .Append(archetype).Append(", ").Append(disclosure).AppendLine(">,")
-            .Append("    global::Owasp.Untrust.VV.Core.IValidatedValueFactory<")
+            .Append(" : global::Owasp.Untrust.VV.Core.")
+            .Append(isStringTraits ? "ExposableString<" : "ValidatedParsableFromTraits<")
+            .Append(self).Append(", ")
+            .Append(isStringTraits ? traitsName : value + ", " + traitsName).Append(", ")
+            .Append(disclosureName).AppendLine(">,")
+            .Append("    global::Owasp.Untrust.VV.Core.IValidatedValueWrapperFactory<")
             .Append(self).Append(", ").Append(value).AppendLine(">")
             .AppendLine("{")
             .Append("    private ").Append(identifier).Append('(').Append(value)
             .AppendLine(" validatedValue) : base(validatedValue) { }")
             .AppendLine()
-            .Append("    static ").Append(self).Append(" global::Owasp.Untrust.VV.Core.IValidatedValueFactory<")
+            .Append("    static ").Append(self).Append(" global::Owasp.Untrust.VV.Core.IValidatedValueWrapperFactory<")
             .Append(self).Append(", ").Append(value).Append(">.CreateValidated(")
-            .Append("global::Owasp.Untrust.VV.Core.InternallyValidatedValue<")
+            .Append("global::Owasp.Untrust.VV.Core.PostValidationRawValue<")
             .Append(value).Append(", ").Append(self).Append("> validated) => new(validated.ValueForReadyConstruction);");
 
         AppendCapabilities(source, traits, traitsName);
@@ -161,58 +172,13 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
         INamedTypeSymbol traits,
         string traitsName)
     {
-        if (HasInterface(traits, "IBoundedStringTraits"))
+        if (HasInterface(traits, "ILengthBoundsTraits"))
         {
             source.AppendLine()
                 .Append("    public static global::Owasp.Untrust.VV.Archetypes.Bounds<int> LengthBounds => ")
                 .Append(traitsName).AppendLine(".LengthBounds;");
         }
 
-        if (HasInterface(traits, "IRegexStringTraits"))
-        {
-            source.AppendLine()
-                .Append("    public static string Pattern => ").Append(traitsName).AppendLine(".Pattern;");
-        }
-
-        if (HasInterface(traits, "IWireFormatTraits"))
-        {
-            source.AppendLine()
-                .Append("    public static string Format => ").Append(traitsName).AppendLine(".Format;");
-        }
-    }
-
-    private static string? EnforcedArchetype(INamedTypeSymbol traits, INamedTypeSymbol contract)
-    {
-        string traitsName = traits.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        string value = contract.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        string disclosure = contract.TypeArguments[1].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-        if (HasInterface(traits, "ISingleLineTextTraits"))
-        {
-            return $"global::Owasp.Untrust.VV.Core.SingleLineTextArchetype<{traitsName}, {disclosure}>";
-        }
-
-        if (HasInterface(traits, "IMultilineTextTraits"))
-        {
-            return $"global::Owasp.Untrust.VV.Core.MultilineTextArchetype<{traitsName}, {disclosure}>";
-        }
-
-        if (HasInterface(traits, "IRegexStringTraits"))
-        {
-            return $"global::Owasp.Untrust.VV.Core.RegexStringArchetype<{traitsName}, {disclosure}>";
-        }
-
-        if (HasInterface(traits, "IBoundedStringTraits"))
-        {
-            return $"global::Owasp.Untrust.VV.Core.BoundedStringArchetype<{traitsName}, {disclosure}>";
-        }
-
-        if (HasInterface(traits, "IBoundedValueTraits"))
-        {
-            return $"global::Owasp.Untrust.VV.Core.BoundedValueArchetype<{traitsName}, {value}, {disclosure}>";
-        }
-
-        return null;
     }
 
     private static bool HasInterface(INamedTypeSymbol traits, string simpleName) =>

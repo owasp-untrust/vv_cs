@@ -3,11 +3,10 @@
 using System.Diagnostics.CodeAnalysis;
 using Xunit;
 using System.Reflection;
-using System.Text.RegularExpressions;
-using Owasp.Untrust.VV.Archetypes;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
-using System.Security.Cryptography.X509Certificates;
+using Owasp.Untrust.VV.StringPreprocessing;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV.Core.Tests;
 
@@ -16,7 +15,7 @@ public sealed class CoreConstructionTests
     [Fact]
     public void Parse_runs_fixed_normalization_and_validation_pipeline()
     {
-        var value = NormalizedCode.Parse(" ab ", null);
+        NormalizedCode value = NormalizedCode.Parse(" ab ", null);
 
         Assert.Equal("AB", value.ExposeUnchecked());
         Assert.Equal("AB", value.ToString());
@@ -29,17 +28,17 @@ public sealed class CoreConstructionTests
     {
         Assert.False(NormalizedCode.TryParse("1!", null, out var invalid));
         Assert.Null(invalid);
-        Assert.False(NormalizedCode.TryParse(null, null, out invalid));
+        Assert.False(NormalizedCode.TryParse(null, null, out invalid)); // untrust-null-represents-no-value: The test verifies that an absent raw input cannot produce a validated value.
         Assert.Null(invalid);
     }
 
     [Fact]
     public void Validated_leaf_has_no_public_construction_or_Value_initializer()
     {
-        Assert.Empty(typeof(Email).GetConstructors(BindingFlags.Instance | BindingFlags.Public));
-        Assert.Null(typeof(Email).GetProperty("Value", BindingFlags.Instance | BindingFlags.Public));
-        Assert.Null(typeof(Email).GetMethod("CreateNonValidated", BindingFlags.Static | BindingFlags.Public));
-        Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(Email)));
+        Assert.Empty(typeof(EmailAddress).GetConstructors(BindingFlags.Instance | BindingFlags.Public));
+        Assert.Null(typeof(EmailAddress).GetProperty("Value", BindingFlags.Instance | BindingFlags.Public));
+        Assert.Null(typeof(EmailAddress).GetMethod("CreateNonValidated", BindingFlags.Static | BindingFlags.Public));
+        Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(EmailAddress)));
     }
 
     [Fact]
@@ -58,7 +57,7 @@ public sealed class CoreConstructionTests
     {
         const string rejectedSecret = "top-secret-invalid-value";
 
-        var exception = Assert.Throws<ValidationException>(
+        ValidationException exception = Assert.Throws<ValidationException>(
             () => NormalizedCode.Parse(rejectedSecret, null));
 
         Assert.DoesNotContain(rejectedSecret, exception.ToString(), StringComparison.Ordinal);
@@ -66,39 +65,38 @@ public sealed class CoreConstructionTests
     }
 
     private sealed class NormalizedCode
-        : RegexString<NormalizedCode, Public<string>>,
-          IRegexString,
-          IParsable<NormalizedCode>
+        : ExposableString<NormalizedCode, NormalizedCode.NormalizedCodeTraits, Public<string>>,
+          IValidatedValueWrapperFactory<NormalizedCode, string>
     {
-        private NormalizedCode(string raw, IFormatProvider? provider)
-            : base(raw, provider)
+        private NormalizedCode(string value)
+            : base(value)
         {
         }
 
-        public static Bounds<int> LengthBounds => new(2, 4);
+        static NormalizedCode IValidatedValueWrapperFactory<NormalizedCode, string>.CreateValidated(
+            PostValidationRawValue<string, NormalizedCode> validated) => new(validated.ValueForReadyConstruction);
 
-        public static string Pattern => "^[A-Z]+$";
+        public sealed class NormalizedCodeTraits
+            : StringTraits<NormalizedCodeTraits, NormalizedCodeValidation>,
+              ILengthBoundsTraits<NormalizedCodeTraits>
+        {
+            public static Bounds<int> LengthBounds => new(2, 4);
+        }
 
-        public static RegexOptions Options => RegexOptions.CultureInvariant;
+        public readonly struct NormalizedCodeValidation : ICharactersValidator, IStringNormalizer, IStringValidator
+        {
+            public string NormalizeBeforeValidation(string raw) => raw.Trim().ToUpperInvariant();
 
-        public static string Normalize(string raw) => raw.Trim().ToUpperInvariant();
+            public ValidationIssue? ValidateCharacters(string value) =>
+                value.All(character => character is >= 'A' and <= 'Z')
+                    ? null
+                    : new ValidationIssue("code.characters", "The code contains unsupported characters.");
 
-        public static ValidationIssue? ValidateValue(string normalized) =>
-            normalized == "BAD"
-                ? new ValidationIssue("code.reserved", "The code is reserved.")
-                : null;
-
-        public static NormalizedCode Parse(string raw, IFormatProvider? provider) => new(raw, provider);
-
-        public static bool TryParse(
-            string? raw,
-            IFormatProvider? provider,
-            [MaybeNullWhen(false)] out NormalizedCode result) =>
-            TryParseCore(
-                raw,
-                provider,
-                static (value, format) => new NormalizedCode(value, format),
-                out result);
+            public ValidationIssue? ValidateString(string value) =>
+                value == "BAD"
+                    ? new ValidationIssue("code.reserved", "The code is reserved.")
+                    : null;
+        }
     }
 
     private sealed class Port
@@ -109,5 +107,8 @@ public sealed class CoreConstructionTests
         private Port(int value) : base(value) { }
 
         public static Bounds<int> Bounds => new(1, 65535);
+
+        static Port IValidatedValueWrapperFactory<Port, int>.CreateValidated(
+            PostValidationRawValue<int, Port> validated) => new(validated.ValueForReadyConstruction);
     }
 }

@@ -2,6 +2,7 @@
 using Xunit;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.VV.CrossValidation;
+using Owasp.Untrust.VV.Traits;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 
 namespace Owasp.Untrust.VV.Core.Tests;
@@ -11,37 +12,37 @@ public sealed class CrossValidationTests
     [Fact]
     public async Task ParsingPerformsOnlyLocalValidation()
     {
-        ExistingEmailCandidate candidate = ExistingEmailCandidate.Parse(
-            "alice@example.com",
+        ExistingPortCandidate candidate = ExistingPortCandidate.Parse(
+            "443",
             null);
         RecordingDirectory directory = new(exists: true);
 
         Assert.Equal(0, directory.CallCount);
 
-        ExistingEmail receiver = await candidate.ConfirmExistsAsync(directory);
+        ExistingPort receiver = await candidate.ConfirmExistsAsync(directory);
 
         Assert.Equal(1, directory.CallCount);
-        Assert.Equal("alice@example.com", receiver.ExposeUnchecked());
+        Assert.Equal(443, receiver.ExposeUnchecked());
     }
 
     [Fact]
     public async Task FailedCrossValidationCannotProduceReceiverAndDoesNotLeakInput()
     {
-        const string input = "missing@example.com";
-        ExistingEmailCandidate candidate = ExistingEmailCandidate.Parse(input, null);
+        const string input = "404";
+        ExistingPortCandidate candidate = ExistingPortCandidate.Parse(input, null);
 
         CrossValidationException failure = await Assert.ThrowsAsync<CrossValidationException>(
             async () => await candidate.ConfirmExistsAsync(new RecordingDirectory(exists: false)));
 
-        Assert.Equal("email.not_found", failure.ErrorCode);
+        Assert.Equal("port.not_found", failure.ErrorCode);
         Assert.DoesNotContain(input, failure.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task CancellationCannotMintCompletion()
     {
-        ExistingEmailCandidate candidate = ExistingEmailCandidate.Parse(
-            "alice@example.com",
+        ExistingPortCandidate candidate = ExistingPortCandidate.Parse(
+            "443",
             null);
         CancellationTokenSource source = new();
         source.Cancel();
@@ -56,43 +57,43 @@ public sealed class CrossValidationTests
     [Fact]
     public void CandidateHasNoRawEscapeHatchAndCompletionCannotBePubliclyConstructed()
     {
-        ExistingEmailCandidate candidate = ExistingEmailCandidate.Parse(
-            "alice@example.com",
+        ExistingPortCandidate candidate = ExistingPortCandidate.Parse(
+            "443",
             null);
 
         Assert.IsAssignableFrom<ICrossValidationCandidate>(candidate);
         Assert.False((object)candidate is IValidatedValue);
         Assert.Null(candidate.GetType().GetMethod("ExposeUnchecked"));
-        Assert.Empty(typeof(CrossValidationCompletion<string, ExistingEmail>)
+        Assert.Empty(typeof(CrossValidationCompletion<int, ExistingPort>)
             .GetConstructors());
     }
 
     [Fact]
     public async Task ReceiverHasDistinctRuntimeAndMarkerType()
     {
-        ExistingEmailCandidate candidate = ExistingEmailCandidate.Parse(
-            "alice@example.com",
+        ExistingPortCandidate candidate = ExistingPortCandidate.Parse(
+            "443",
             null);
-        ExistingEmail receiver = await candidate.ConfirmExistsAsync(
+        ExistingPort receiver = await candidate.ConfirmExistsAsync(
             new RecordingDirectory(exists: true));
 
         Assert.IsAssignableFrom<ICrossValidatedValue>(receiver);
-        Assert.Equal(typeof(ExistingEmail), candidate.ReceiverType);
+        Assert.Equal(typeof(ExistingPort), candidate.ReceiverType);
         Assert.NotEqual(candidate.GetType(), receiver.GetType());
         Assert.Equal("[sensitive]", receiver.ToString());
     }
 
-    private interface IEmailDirectory
+    private interface IPortDirectory
     {
-        ValueTask<bool> ExistsAsync(string email, CancellationToken cancellationToken);
+        ValueTask<bool> ExistsAsync(int port, CancellationToken cancellationToken);
     }
 
-    private sealed class RecordingDirectory(bool exists) : IEmailDirectory
+    private sealed class RecordingDirectory(bool exists) : IPortDirectory
     {
         public int CallCount { get; private set; }
 
         public ValueTask<bool> ExistsAsync(
-            string email,
+            int port,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -101,28 +102,27 @@ public sealed class CrossValidationTests
         }
     }
 
-    private sealed class ExistingEmailCandidate :
+    private sealed class ExistingPortCandidate :
         CrossValidationCandidate<
-            ExistingEmailCandidate,
-            string,
-            ExistingEmail,
-            EmailTraits,
-            BoundedStringArchetype<EmailTraits, RedactedPii<string>>,
-            RedactedPii<string>>,
-        ICrossValidationCandidateFactory<ExistingEmailCandidate, string>
+            ExistingPortCandidate,
+            int,
+            ExistingPort,
+            PortTraits,
+            RedactedPii<int>>,
+        ICrossValidationCandidateFactory<ExistingPortCandidate, int>
     {
-        private ExistingEmailCandidate(string locallyValidated)
+        private ExistingPortCandidate(int locallyValidated)
             : base(locallyValidated)
         {
         }
 
-        static ExistingEmailCandidate
-            ICrossValidationCandidateFactory<ExistingEmailCandidate, string>.CreateValidated(
-                PostValidationRawValue<string, ExistingEmailCandidate> validated) =>
+        static ExistingPortCandidate
+            ICrossValidationCandidateFactory<ExistingPortCandidate, int>.CreateValidated(
+                PostValidationRawValue<int, ExistingPortCandidate> validated) =>
             new(validated.ValueForReadyConstruction);
 
-        public ValueTask<ExistingEmail> ConfirmExistsAsync(
-            IEmailDirectory directory,
+        public ValueTask<ExistingPort> ConfirmExistsAsync(
+            IPortDirectory directory,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(directory);
@@ -131,22 +131,32 @@ public sealed class CrossValidationTests
                     await directory.ExistsAsync(value, token).ConfigureAwait(false)
                         ? CrossValidationResult.Success
                         : CrossValidationResult.Failure(
-                            "email.not_found",
-                            "The email address is not registered."),
+                            "port.not_found",
+                            "The port is not registered."),
                 cancellationToken);
         }
     }
 
-    private sealed class ExistingEmail :
-        ExposableCrossValidatedValue<ExistingEmail, string, RedactedPii<string>>,
-        ICrossValidatedValueFactory<ExistingEmail, string>
+    private sealed class ExistingPort :
+        ExposableCrossValidatedValue<ExistingPort, int, RedactedPii<int>>,
+        ICrossValidatedValueFactory<ExistingPort, int>
     {
-        private ExistingEmail(CrossValidationCompletion<string, ExistingEmail> completion)
+        private ExistingPort(CrossValidationCompletion<int, ExistingPort> completion)
             : base(completion)
         {
         }
 
-        public static ExistingEmail CreateCrossValidated(
-            CrossValidationCompletion<string, ExistingEmail> completion) => new(completion);
+        public static ExistingPort CreateCrossValidated(
+            CrossValidationCompletion<int, ExistingPort> completion) => new(completion);
+    }
+
+    private readonly struct PortTraits : IParsableTraits<int>
+    {
+        public static int NormalizeValue(int value) => value;
+
+        public static ValidationIssue? ValidateValue(int value) =>
+            value is > 0 and <= 65_535
+                ? null
+                : new ValidationIssue("port.range", "The port is outside the supported range.");
     }
 }

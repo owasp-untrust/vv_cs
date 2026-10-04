@@ -1,5 +1,6 @@
 #pragma warning disable CS1591
 using Xunit;
+using System.Globalization;
 using System.Reflection;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
@@ -12,7 +13,7 @@ public sealed class SensitivityLifecycleTests
     [Fact]
     public async Task HashOnlyDoesNotRetainPlaintextAndCopiesProviderBuffers()
     {
-        Email email = Email.Parse("alice@example.com", null);
+        EmailAddress email = EmailAddress.Parse("alice@example.com", CultureInfo.InvariantCulture);
         byte[] providerBuffer = [1, 2, 3, 4];
         RecordingHasher hasher = new(providerBuffer);
 
@@ -35,7 +36,7 @@ public sealed class SensitivityLifecycleTests
     [Fact]
     public async Task RetainedHashExplicitlyAnnouncesAndExposesPlaintext()
     {
-        Email email = Email.Parse("alice@example.com", null);
+        EmailAddress email = EmailAddress.Parse("alice@example.com", CultureInfo.InvariantCulture);
 
         RetainedHashedValue<string, HexDisclosure> retained = await email
             .PendingHash()
@@ -49,7 +50,7 @@ public sealed class SensitivityLifecycleTests
     [Fact]
     public async Task EncryptionOnlyRetainsOnlyDefensivelyCopiedEnvelope()
     {
-        Email email = Email.Parse("alice@example.com", null);
+        EmailAddress email = EmailAddress.Parse("alice@example.com", CultureInfo.InvariantCulture);
         byte[] ciphertext = [10, 11];
         byte[] nonce = [12];
         byte[] tag = [13];
@@ -82,7 +83,7 @@ public sealed class SensitivityLifecycleTests
     [Fact]
     public async Task TokenAndVaultPathOnlyStatesDoNotRetainSource()
     {
-        Email email = Email.Parse("alice@example.com", null);
+        EmailAddress email = EmailAddress.Parse("alice@example.com", CultureInfo.InvariantCulture);
         InMemorySecretStore store = new();
         VaultPath reference = new("users/alice/api-key");
 
@@ -105,7 +106,7 @@ public sealed class SensitivityLifecycleTests
     [Fact]
     public async Task ProvidersReceiveCancellationAndCancelledWorkProducesNoState()
     {
-        Email email = Email.Parse("alice@example.com", null);
+        EmailAddress email = EmailAddress.Parse("alice@example.com", CultureInfo.InvariantCulture);
         CancellationTokenSource source = new();
         source.Cancel();
         RecordingHasher hasher = new([1]);

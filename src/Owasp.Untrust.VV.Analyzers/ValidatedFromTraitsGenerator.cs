@@ -94,15 +94,13 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
     private static bool IsParsableTraitsContract(INamedTypeSymbol candidate) =>
         candidate.Name == "IParsableTraits" &&
         candidate.Arity == 1 &&
-        candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Core";
+        candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Traits";
 
     private static bool InheritsStringTraits(INamedTypeSymbol traits)
     {
-        for (INamedTypeSymbol? current = traits; current is not null; current = current.BaseType)
+        for (INamedTypeSymbol? candidate = traits; candidate is not null; candidate = candidate.BaseType)
         {
-            if (current.Name == "IStringTraitsAnonymousPreprocessing" &&
-                current.Arity == 1 &&
-                current.ContainingNamespace.ToDisplayString() == "StringPreprocessing")
+            if (candidate.AllInterfaces.Any(IsStringTraitsContract))
             {
                 return true;
             }
@@ -110,6 +108,11 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
 
         return false;
     }
+
+    private static bool IsStringTraitsContract(INamedTypeSymbol candidate) =>
+        candidate.Name == "IStringTraitsAnonymousPreprocessing" &&
+        candidate.Arity == 1 &&
+        candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Traits";
 
     private static bool IsValidDeclaration(
         INamedTypeSymbol type,
@@ -175,7 +178,7 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
         if (HasInterface(traits, "ILengthBoundsTraits"))
         {
             source.AppendLine()
-                .Append("    public static global::Owasp.Untrust.VV.Archetypes.Bounds<int> LengthBounds => ")
+                .Append("    public static global::Owasp.Untrust.VV.Core.Bounds<int> LengthBounds => ")
                 .Append(traitsName).AppendLine(".LengthBounds;");
         }
 
@@ -184,7 +187,7 @@ public sealed class ValidatedFromTraitsGenerator : ISourceGenerator
     private static bool HasInterface(INamedTypeSymbol traits, string simpleName) =>
         traits.AllInterfaces.Any(candidate =>
             candidate.Name == simpleName &&
-            candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Core");
+            candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Traits");
 
     private static string SanitizeHintName(INamedTypeSymbol type) =>
         type.ToDisplayString().Replace('<', '_').Replace('>', '_').Replace(',', '_').Replace(' ', '_');

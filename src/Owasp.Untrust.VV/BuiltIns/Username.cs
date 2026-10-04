@@ -2,7 +2,8 @@ using System.Text.RegularExpressions;
 using Owasp.Untrust.ValueDescriptors;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 using Owasp.Untrust.VV.Core;
-using Owasp.Untrust.VV.Core.StringPreprocessing;
+using Owasp.Untrust.VV.StringTraitMixins;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV;
 

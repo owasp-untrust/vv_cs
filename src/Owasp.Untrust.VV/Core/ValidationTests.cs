@@ -1,8 +1,5 @@
 namespace Owasp.Untrust.VV.Core;
 
-internal delegate bool TryParseValue<TValue>(out TValue? value)
-    where TValue : notnull;
-
 internal static class ValidationTests
 {
     internal static string RequireNotNull(string? raw)
@@ -28,21 +25,9 @@ internal static class ValidationTests
         IFormatProvider? provider,
         string code,
         string message)
-        where TValue : notnull, IParsable<TValue> =>
-        RequireSuccessfulParse<TValue>(
-            (out TValue? value) => TValue.TryParse(raw, provider, out value),
-            code,
-            message);
-
-    internal static TValue RequireSuccessfulParse<TValue>(
-        TryParseValue<TValue> tryParse,
-        string code,
-        string message)
-        where TValue : notnull
+        where TValue : notnull, IParsable<TValue>
     {
-        ArgumentNullException.ThrowIfNull(tryParse);
-
-        if (!tryParse(out TValue? value) || value is null)
+        if (!TValue.TryParse(raw, provider, out TValue? value) || value is null)
         {
             throw new ValidationException(new ValidationIssue(code, message));
         }

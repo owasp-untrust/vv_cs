@@ -2,7 +2,7 @@
 
 using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
-using Owasp.Untrust.VV.Core.StringPreprocessing;
+using Owasp.Untrust.VV.Traits;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 

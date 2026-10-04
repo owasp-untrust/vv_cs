@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Owasp.Untrust.VV.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV.CrossValidation;
 

@@ -2,6 +2,7 @@
 
 using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using Owasp.Untrust.VV.Traits;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Owasp.Untrust.VV.Core;

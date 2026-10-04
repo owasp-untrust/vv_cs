@@ -1,5 +1,6 @@
 using System.Numerics;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV.Core;
 

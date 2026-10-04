@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
-using Owasp.Untrust.VV.Core.StringPreprocessing;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV.Core;
 

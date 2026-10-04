@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV.EntityAccess;
 

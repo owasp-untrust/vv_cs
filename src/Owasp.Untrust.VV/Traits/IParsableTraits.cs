@@ -1,4 +1,6 @@
-namespace Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Core;
+
+namespace Owasp.Untrust.VV.Traits;
 
 /// <summary>Input validation behavior for a non-string value parsed by its own type.</summary>
 public interface IParsableTraits<TValue>

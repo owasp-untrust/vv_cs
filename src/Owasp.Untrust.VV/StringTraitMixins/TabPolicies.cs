@@ -1,6 +1,6 @@
 #pragma warning disable CS1591
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringTraitMixins;
 
 /// <summary>Controls whether an otherwise safe single/multiline value accepts tabs.</summary>
 public interface ITabPolicy

@@ -1,5 +1,5 @@
 #pragma warning disable CS1591
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringTraitMixins;
 
 internal static class CharacterValidationHelpers
 {

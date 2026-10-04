@@ -1,4 +1,6 @@
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+using Owasp.Untrust.VV.Core;
+
+namespace Owasp.Untrust.VV.Traits;
 
 public interface IStringTraitsAnonymousPreprocessing<TSelf>
     where TSelf :

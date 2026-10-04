@@ -1,6 +1,7 @@
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.StringPreprocessing;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringTraitMixins;
 
 /// <summary>Canonicalizes line endings and rejects malformed UTF-16 or disallowed controls.</summary>
 public readonly struct MultilineUnicode<TTabPolicy>

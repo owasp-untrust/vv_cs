@@ -1,6 +1,7 @@
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.StringPreprocessing;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.Traits;
 
 public abstract class StringTraits<TSelf, TFullValidator>
     : StringTraitsFixedArgsNum<

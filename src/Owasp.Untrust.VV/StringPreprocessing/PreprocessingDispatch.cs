@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using Owasp.Untrust.VV.Core;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringPreprocessing;
 
 internal static class PreprocessingDispatch<TStep>
     where TStep : struct, IStringPreprocessingStep

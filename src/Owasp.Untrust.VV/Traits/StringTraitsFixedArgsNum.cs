@@ -1,4 +1,7 @@
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.StringPreprocessing;
+
+namespace Owasp.Untrust.VV.Traits;
 
 /// <summary>
 /// Shared implementation for string traits composed from a preprocessing chain.

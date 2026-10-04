@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.StringPreprocessing;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringTraitMixins;
 
-public readonly struct DataAnnotationAttributeValidator<TAttribute> : IStringValidator
+public readonly struct DataAnnotationAttributeValidator<TAttribute> 
+    : IStringValidator
     where TAttribute : ValidationAttribute, new()
 {
     private static readonly TAttribute Attribute = new();

@@ -1,6 +1,6 @@
 using Owasp.Untrust.VV.Core;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringPreprocessing;
 
 public interface IPreprocessingChain
 {

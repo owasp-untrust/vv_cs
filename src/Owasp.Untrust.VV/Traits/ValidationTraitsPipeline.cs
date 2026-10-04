@@ -2,7 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 
 #warning "TEMPORARY: ValidationTraitsPipeline remains as a compatibility bridge; remove it after callers use the replacement validation flow."
 
-namespace Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.Core;
+
+namespace Owasp.Untrust.VV.Traits;
 
 internal static class ValidationTraitsPipeline
 {

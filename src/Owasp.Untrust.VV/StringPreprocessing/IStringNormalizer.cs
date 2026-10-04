@@ -1,4 +1,4 @@
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringPreprocessing;
 
 public interface IStringNormalizer : IStringPreprocessingStep
 {

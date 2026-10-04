@@ -1,20 +1,29 @@
 using System.Text.RegularExpressions;
+using Owasp.Untrust.ValueDescriptors;
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.StringPreprocessing;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringTraitMixins;
 
-public interface IRegexPattern<TSelf>
-    where TSelf : IRegexPattern<TSelf>
+public interface IAsciiRegexPattern<TSelf>
+    where TSelf : IAsciiRegexPattern<TSelf>
 {
-    static abstract string Pattern { get; }
-    static abstract RegexOptions Options { get; }
+    static abstract RegexAscii Pattern { get; }
     static abstract TimeSpan MatchTimeout { get; }
 }
 
-public readonly struct RegexValidator<TPattern> : IStringValidator
-    where TPattern : IRegexPattern<TPattern>
+public readonly struct AsciiRegexValidator<TPattern>
+    : ICharactersValidator, IStringValidator
+    where TPattern : IAsciiRegexPattern<TPattern>
 {
     private static readonly Regex Expression = CreateExpression();
+
+    public ValidationIssue? ValidateCharacters(string value)
+    {
+        // String validator includes characters validation
+        // since it only allows ASCII characters, so we can skip the separate check here.
+        return null;
+    }
 
     public ValidationIssue? ValidateString(string value)
     {
@@ -43,8 +52,8 @@ public readonly struct RegexValidator<TPattern> : IStringValidator
         }
 
         return new Regex(
-            TPattern.Pattern,
-            TPattern.Options | RegexOptions.CultureInvariant,
+            TPattern.Pattern.ExposeUnchecked(),
+            TPattern.Pattern.Options,
             timeout);
     }
 }

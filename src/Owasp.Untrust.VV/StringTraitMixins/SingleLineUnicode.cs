@@ -1,6 +1,7 @@
 using Owasp.Untrust.VV.Core;
+using Owasp.Untrust.VV.StringPreprocessing;
 
-namespace Owasp.Untrust.VV.Core.StringPreprocessing;
+namespace Owasp.Untrust.VV.StringTraitMixins;
 
 /// <summary>Rejects line breaks, controls, and malformed UTF-16 in single-line text.</summary>
 public readonly struct SingleLineUnicode : ICharactersValidator

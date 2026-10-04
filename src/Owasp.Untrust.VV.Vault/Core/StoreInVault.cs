@@ -8,10 +8,10 @@ public sealed class StoreInVault<TValue> : IValueTransformer<TValue, VaultStorag
     where TValue : notnull
 {
     private readonly ISecretStore<TValue> _store;
-    private readonly SecretReference _reference;
+    private readonly VaultPath _reference;
     private readonly string _publicRepresentation;
 
-    public StoreInVault(ISecretStore<TValue> store, SecretReference reference, string publicRepresentation)
+    public StoreInVault(ISecretStore<TValue> store, VaultPath reference, string publicRepresentation)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _reference = reference ?? throw new ArgumentNullException(nameof(reference));

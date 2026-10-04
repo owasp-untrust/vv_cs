@@ -10,10 +10,10 @@ public abstract class VaultStoredValue<TSelf, TValue> : IAsyncExposableValue<TVa
     where TValue : notnull
 {
     private readonly ISecretStore<TValue> _store;
-    private readonly SecretReference _reference;
+    private readonly VaultPath _reference;
     private readonly string _publicRepresentation;
 
-    protected VaultStoredValue(InternallyTransformedValue<VaultStorageReceipt<TValue>, TSelf> stored)
+    protected VaultStoredValue(InternallyTransformedValue<TSelf, VaultStorageReceipt<TValue>> stored)
     {
         ArgumentNullException.ThrowIfNull(stored);
         VaultStorageReceipt<TValue> receipt = stored.ValueForReadyConstruction;
@@ -22,7 +22,7 @@ public abstract class VaultStoredValue<TSelf, TValue> : IAsyncExposableValue<TVa
         _publicRepresentation = receipt.PublicRepresentation;
     }
 
-    public SecretReference Reference => _reference;
+    public VaultPath Reference => _reference;
 
     public string ToPublicString() => _publicRepresentation;
 

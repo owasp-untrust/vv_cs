@@ -6,7 +6,7 @@ namespace Owasp.Untrust.VV.Vault;
 public sealed class VaultStorageReceipt<TValue>
     where TValue : notnull
 {
-    internal VaultStorageReceipt(ISecretStore<TValue> store, SecretReference reference, string publicRepresentation)
+    internal VaultStorageReceipt(ISecretStore<TValue> store, VaultPath reference, string publicRepresentation)
     {
         Store = store ?? throw new ArgumentNullException(nameof(store));
         Reference = reference ?? throw new ArgumentNullException(nameof(reference));
@@ -15,7 +15,7 @@ public sealed class VaultStorageReceipt<TValue>
 
     public ISecretStore<TValue> Store { get; }
 
-    public SecretReference Reference { get; }
+    public VaultPath Reference { get; }
 
     public string PublicRepresentation { get; }
 }

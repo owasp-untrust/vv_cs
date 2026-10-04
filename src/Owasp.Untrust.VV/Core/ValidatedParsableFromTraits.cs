@@ -1,16 +1,20 @@
 using System.Diagnostics.CodeAnalysis;
+using Owasp.Untrust.ValueDescriptors.Core;
 using Owasp.Untrust.ValueDescriptors.Disclosure;
+using Owasp.Untrust.VV.Traits;
 
 namespace Owasp.Untrust.VV.Core;
 
 public abstract class ValidatedParsableFromTraits<TSelf, TValue, TTraits, TDisclosure>
-    : ExposableValidatedValue<TSelf, TValue, TDisclosure>, IParsable<TSelf>
+    : ValidatedValue<TSelf, TValue, TDisclosure>, IValidatedValue<TValue>, IExposableValue<TValue>, IParsable<TSelf>
     where TSelf : ValidatedParsableFromTraits<TSelf, TValue, TTraits, TDisclosure>, IValidatedValueWrapperFactory<TSelf, TValue>
     where TValue : notnull, IParsable<TValue>
     where TTraits : IParsableTraits<TValue>
     where TDisclosure : IDisclosurePolicy<TValue>
 {
     protected ValidatedParsableFromTraits(TValue validatedValue) : base(validatedValue) { }
+
+    public TValue ExposeUnchecked() => GetValidatedValueForDerivedUse();
 
     public static TSelf Parse(string raw, IFormatProvider? provider)
     {

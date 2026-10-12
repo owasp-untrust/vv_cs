@@ -6,9 +6,10 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" PrivateAssets="all" />
     <ProjectReference Include="../../src/Owasp.Untrust.VV/Owasp.Untrust.VV.csproj" />
     <ProjectReference Include="../../src/Owasp.Untrust.VV.Analyzers/Owasp.Untrust.VV.Analyzers.csproj"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
+                      ReferenceOutputAssembly="true" />
   </ItemGroup>
 </Project>

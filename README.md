@@ -165,6 +165,17 @@ when the application deliberately makes that decision. Pending values,
 cross-validation candidates, entity-resolution candidates, and authorization
 evidence always remain blocked. Cross-validated receivers remain blocked on input.
 
+Referencing `Owasp.Untrust.VV` also enforces validated controller route inputs.
+By default, each MVC route parameter must be a VV value, or a DTO whose public
+instance fields and properties are VV values. To opt out for a deliberately
+reviewed application, add `vv-enforcement.json` beside the consuming project:
+
+```json
+{
+  "requireValidatedControllerRouteArguments": false
+}
+```
+
 ## Value chains
 
 Pending values are safe to render but never expose their raw primitive. Typed transitions perform cross-validation, authorization, hashing, encryption, vault storage, or disclosure transformation and mint the next value only on success. The next value can itself be pending, allowing `Pending → HalfBaked → Ready` chains without a separate state-machine API. See [value_chain_examples.md](value_chain_examples.md) for the target API examples.
@@ -174,7 +185,7 @@ Pending values are safe to render but never expose their raw primitive. Typed tr
 - `Owasp.Untrust.ValueDescriptors`: shared descriptor and disclosure contracts.
 - `Owasp.Untrust.VV`: validation core, archetypes, sensitivity, and cross-validation.
 - `Owasp.Untrust.VV.AspNetCore`: JSON and Swagger integration.
-- `Owasp.Untrust.VV.Analyzers`: security rules `VV2001`–`VV2007`, wired into the core build as errors.
+- `Owasp.Untrust.VV.Analyzers`: security rules `VV2001`–`VV2009`, wired into the core build as errors.
 - `Owasp.Untrust.VV.Tests`: runtime and integration tests.
 
 Build and test on Windows:

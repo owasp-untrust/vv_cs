@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)\vv-enforcement.json"
+                     Condition="Exists('$(MSBuildProjectDirectory)\vv-enforcement.json')" />
+  </ItemGroup>
+</Project>

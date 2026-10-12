@@ -18,5 +18,11 @@
           Pack="true"
           PackagePath="analyzers/dotnet/cs"
           Visible="false" />
+    <None Include="buildTransitive\Owasp.Untrust.VV.props"
+          Pack="true"
+          PackagePath="buildTransitive" />
+    <None Include="../../vv-enforcement.example.json"
+          Pack="true"
+          PackagePath="contentFiles/any/any/" />
   </ItemGroup>
 </Project>

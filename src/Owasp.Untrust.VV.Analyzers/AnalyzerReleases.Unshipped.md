@@ -11,3 +11,4 @@ VV2004 | Owasp.Untrust.VV.Security | Error | Validated values cannot expose muta
 VV2005 | Owasp.Untrust.VV.Security | Error | Raw escape hatches must be named ExposeUnchecked
 VV2006 | Owasp.Untrust.VV.Security | Error | Cross-validated receivers cannot be request-parseable
 VV2007 | Owasp.Untrust.VV.Security | Error | Cross-validation candidates cannot expose raw state
+VV2008 | Owasp.Untrust.VV.Security | Error | String parsing traits must use the complete string-validation pipeline or document every reviewed replacement phase

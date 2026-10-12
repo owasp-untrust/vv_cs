@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Owasp.Untrust.VV.Analyzers;
@@ -16,6 +17,9 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
     internal const string RAW_EXPOSURE_NAME_ID = "VV2005";
     internal const string RECEIVER_PARSING_ID = "VV2006";
     internal const string CANDIDATE_EXPOSURE_ID = "VV2007";
+    internal const string STRING_PARSABLE_TRAITS_ID = "VV2008";
+    internal const string VALIDATED_CONTROLLER_ROUTE_ARGUMENTS_ID = "VV2009";
+    internal const string CONFIGURATION_ERROR_ID = "VV2010";
 
     private static readonly DiagnosticDescriptor MustBeSealed = new(
         MUST_BE_SEALED_ID,
@@ -80,6 +84,31 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         description: "Candidates are incomplete trust states and cannot provide a raw-value escape hatch.");
 
+    private static readonly DiagnosticDescriptor StringParsableTraits = new(
+        STRING_PARSABLE_TRAITS_ID,
+        "String parsing traits must enforce every string-validation phase",
+        "Type '{0}' implements IParsableTraits<string>. Use StringTraits<...> so bounds, character, normalization, and string validation phases are all enforced. Escape only with [AllowStringIParsableTraits(justification, boundsValidationPerformed, charactersValidationPerformed, normalizationPerformed, stringValidationPerformed)]; justification must be at least 40 characters and every phase description at least 10 characters.",
+        "Owasp.Untrust.VV.Security",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "String values require the complete StringTraits validation pipeline unless a reviewed exception documents every replacement phase.");
+
+    private static readonly DiagnosticDescriptor ValidatedControllerRouteArguments = new(
+        VALIDATED_CONTROLLER_ROUTE_ARGUMENTS_ID,
+        "Controller route input requires validated values",
+        "Route input '{0}' must derive from ValidatedValue<...> or CrossValidatedValue<...>, or be a DTO whose public instance fields and properties all do. Before creating a new value type, look for a suitable VV built-in.",
+        "Owasp.Untrust.VV.Security",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor ConfigurationError = new(
+        CONFIGURATION_ERROR_ID,
+        "VV analyzer configuration error",
+        "VV analyzer configuration error: {0}",
+        "Owasp.Untrust.VV.Security",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(
             MustBeSealed,
@@ -88,13 +117,56 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
             PublicMutableState,
             RawExposureName,
             ReceiverParsing,
-            CandidateExposure);
+            CandidateExposure,
+            StringParsableTraits,
+            ValidatedControllerRouteArguments,
+            ConfigurationError);
 
     public override void Initialize(AnalysisContext context)
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
+        context.RegisterCompilationStartAction(start =>
+        {
+            ValidatedValuePolicy policy = ValidatedValuePolicy.Load(start.Options.AdditionalFiles);
+            start.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
+            start.RegisterSymbolAction(symbolContext => AnalyzeControllerRoute(symbolContext, policy), SymbolKind.Method);
+            start.RegisterCompilationEndAction(end =>
+            {
+                foreach (string error in policy.Errors)
+                {
+                    end.ReportDiagnostic(Diagnostic.Create(ConfigurationError, Location.None, error));
+                }
+            });
+        });
+    }
+
+    private static void AnalyzeControllerRoute(SymbolAnalysisContext context, ValidatedValuePolicy policy)
+    {
+        if (!policy.RequireValidatedControllerRouteArguments || context.Symbol is not IMethodSymbol method || !IsControllerRoute(method))
+        {
+            return;
+        }
+
+        foreach (IParameterSymbol parameter in method.Parameters)
+        {
+            if (IsValidatedValue(parameter.Type))
+            {
+                continue;
+            }
+
+            if (parameter.Type is INamedTypeSymbol dto && dto.TypeKind is TypeKind.Class or TypeKind.Struct && dto.Locations.Any(location => location.IsInSource))
+            {
+                foreach (ISymbol member in dto.GetMembers().Where(member => member is IFieldSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public } or IPropertySymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public }).Where(member => !IsValidatedValue(member is IFieldSymbol field ? field.Type : ((IPropertySymbol)member).Type)))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(ValidatedControllerRouteArguments, member.Locations.FirstOrDefault(location => location.IsInSource) ?? parameter.Locations[0], $"{parameter.Name}.{member.Name}"));
+                }
+
+                continue;
+            }
+
+            context.ReportDiagnostic(Diagnostic.Create(ValidatedControllerRouteArguments, parameter.Locations[0], parameter.Name));
+        }
     }
 
     private static void AnalyzeNamedType(SymbolAnalysisContext context)
@@ -127,6 +199,11 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
                 CandidateExposure,
                 FirstLocation(type),
                 type.Name));
+        }
+
+        if (ImplementsStringParsableTraits(type) && !HasStringParsableTraitsException(type))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(StringParsableTraits, FirstLocation(type), type.ToDisplayString()));
         }
     }
 
@@ -300,10 +377,66 @@ public sealed class ValidatedValueAnalyzer : DiagnosticAnalyzer
                 "Owasp.Untrust.VV",
                 StringComparison.Ordinal));
 
+    private static bool IsControllerRoute(IMethodSymbol method) =>
+        method.ContainingType is INamedTypeSymbol controller &&
+        DerivesFrom(controller, "Microsoft.AspNetCore.Mvc.ControllerBase") &&
+        method.GetAttributes().Any(attribute => attribute.AttributeClass is INamedTypeSymbol attributeType && DerivesFrom(attributeType, "Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute"));
+
+    private static bool IsValidatedValue(ITypeSymbol type)
+    {
+        for (INamedTypeSymbol? current = type as INamedTypeSymbol; current is not null; current = current.BaseType)
+        {
+            INamedTypeSymbol definition = current.OriginalDefinition;
+            string namespaceName = definition.ContainingNamespace.ToDisplayString();
+            if ((namespaceName == "Owasp.Untrust.VV.Core" && definition.MetadataName == "ValidatedValue`3") ||
+                (namespaceName == "Owasp.Untrust.VV.CrossValidation" && definition.MetadataName == "CrossValidatedValue`3"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool DerivesFrom(INamedTypeSymbol type, string baseTypeName)
+    {
+        for (INamedTypeSymbol? current = type; current is not null; current = current.BaseType)
+        {
+            if (current.ToDisplayString() == baseTypeName)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool ImplementsParsing(INamedTypeSymbol type) =>
         type.AllInterfaces.Any(i =>
             (i.Name == "IParsable" || i.Name == "ISpanParsable") &&
             i.ContainingNamespace.ToDisplayString() == "System");
+
+    private static bool ImplementsStringParsableTraits(INamedTypeSymbol type) =>
+        type.AllInterfaces.Any(candidate =>
+            candidate.Name == "IParsableTraits" &&
+            candidate.Arity == 1 &&
+            candidate.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Traits" &&
+            candidate.TypeArguments[0].SpecialType == SpecialType.System_String);
+
+    private static bool HasStringParsableTraitsException(INamedTypeSymbol type)
+    {
+        AttributeData? exception = type.GetAttributes().SingleOrDefault(attribute =>
+            attribute.AttributeClass?.Name == "AllowStringIParsableTraitsAttribute" &&
+            attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "Owasp.Untrust.VV.Traits");
+        if (exception is null || exception.ConstructorArguments.Length != 5)
+        {
+            return false;
+        }
+
+        int[] minimumLengths = { 40, 10, 10, 10, 10 };
+        return minimumLengths.Select((minimumLength, index) =>
+            exception.ConstructorArguments[index].Value is string value && value.Length >= minimumLength).All(result => result);
+    }
 
     private static bool HasPublicInstanceMethodInHierarchy(
         INamedTypeSymbol type,
